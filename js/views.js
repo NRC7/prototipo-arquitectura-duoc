@@ -17,6 +17,8 @@ const talleresData = [
   },
 ];
 
+const aspirantesData = [];
+
 // Vistas
 const views = {
   inicio: { title: "Inicio", subtitle: "...", render: () => `...` },
@@ -264,7 +266,162 @@ const views = {
   },
 
   inscripciones: { title: "Inscripciones", subtitle: "...", render: () => `...` },
-  postulaciones: { title: "Postulaciones", subtitle: "...", render: () => `...` },
+
+  postulaciones: {
+    title: "Postular como instructor de talleres",
+    subtitle: "Caso de Uso CU-003",
+    render: () => `
+        <section class="page-header">
+        <div>
+            <h1 class="page-title">Postular como instructor de talleres</h1>
+            <p class="page-subtitle">
+            Ingreso y validación de datos de postulación para aspirantes a instructor.
+            </p>
+        </div>
+        </section>
+
+        <section class="cards-grid cards-grid-column">
+        <article class="card">
+            <div class="card-header">
+            <div>
+                <div class="card-title">Datos de postulación</div>
+                <div class="card-subtitle">
+                Complete los campos para registrar su postulación como instructor.
+                </div>
+            </div>
+            </div>
+
+            <form id="formPostulacion" class="inscripcion-form">
+            <div class="form-row">
+                <label class="form-label">
+                RUT
+                <input type="text" id="postRut" class="form-input" placeholder="11.111.111-1" />
+                </label>
+                <label class="form-label">
+                Nombre completo
+                <input type="text" id="postNombre" class="form-input" placeholder="Nombre y apellido" />
+                </label>
+            </div>
+
+            <div class="form-row">
+                <label class="form-label">
+                Correo electrónico
+                <input type="email" id="postEmail" class="form-input" placeholder="instructor@correo.cl" />
+                </label>
+                <label class="form-label">
+                Teléfono de contacto
+                <input type="text" id="postTelefono" class="form-input" placeholder="+56 9 ..." />
+                </label>
+            </div>
+
+            <div class="form-row">
+                <label class="form-label">
+                Experiencia / motivación
+                <textarea id="postExperiencia" class="form-input" rows="3"
+                    placeholder="Describa brevemente su experiencia y motivación para dictar talleres."></textarea>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-link">
+                Enviar postulación
+            </button>
+            <p id="mensajePostulacion" class="muted" style="margin-top:8px;"></p>
+            </form>
+        </article>
+        </section>
+    `,
+    init: function () {
+        const form = document.getElementById("formPostulacion");
+        const mensajePostulacion = document.getElementById("mensajePostulacion");
+        const rutInput = document.getElementById("postRut");
+
+        if (!form) return;
+
+        // Formato visual de RUT (igual que en CU-002)
+        if (rutInput) {
+        rutInput.addEventListener("input", () => {
+            let value = rutInput.value.replace(/[^0-9kK]/g, "").toUpperCase();
+
+            if (value.length <= 1) {
+            rutInput.value = value;
+            return;
+            }
+
+            const cuerpo = value.slice(0, -1);
+            const dv = value.slice(-1);
+            let cuerpoFormateado = "";
+            const reversed = cuerpo.split("").reverse().join("");
+
+            for (let i = 0; i < reversed.length; i++) {
+            if (i > 0 && i % 3 === 0) {
+                cuerpoFormateado = "." + cuerpoFormateado;
+            }
+            cuerpoFormateado = reversed[i] + cuerpoFormateado;
+            }
+
+            rutInput.value = cuerpoFormateado + "-" + dv;
+        });
+        }
+
+        form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const rutVisual = document.getElementById("postRut").value.trim();
+        const nombre = document.getElementById("postNombre").value.trim();
+        const email = document.getElementById("postEmail").value.trim();
+        const telefono = document.getElementById("postTelefono").value.trim();
+        const experiencia = document.getElementById("postExperiencia").value.trim();
+
+        // Normalizamos RUT solo para futura lógica
+        const rutNormalizado = rutVisual.replace(/[^0-9kK]/g, "").toUpperCase();
+
+        // Validación básica (equivale a "¿Datos ingresados correctamente?")
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (
+            !rutNormalizado ||
+            !nombre ||
+            !email ||
+            !telefono ||
+            !experiencia ||
+            !emailRegex.test(email)
+        ) {
+            mensajePostulacion.textContent = "Datos ingresados no son válidos.";
+            return;
+        }
+
+        // Registrar datos del aspirante en el "sistema" (dummy)
+        const entrevistaDate = new Date();
+        entrevistaDate.setDate(entrevistaDate.getDate() + 3);
+        entrevistaDate.setHours(10, 0, 0, 0);
+
+        const dd = String(entrevistaDate.getDate()).padStart(2, "0");
+        const mm = String(entrevistaDate.getMonth() + 1).padStart(2, "0");
+        const hh = String(entrevistaDate.getHours()).padStart(2, "0");
+        const min = String(entrevistaDate.getMinutes()).padStart(2, "0");
+        const fechaEntrevista = `${dd}/${mm} ${hh}:${min}`;
+
+        aspirantesData.push({
+            rut: rutNormalizado,
+            nombre,
+            email,
+            telefono,
+            experiencia,
+            fechaEntrevista,
+        });
+
+        // Mensaje final del diagrama:
+        mensajePostulacion.textContent =
+            "Postulación registrada correctamente, su entrevista queda agendada para " +
+            fechaEntrevista +
+            " Hrs.";
+
+        // Opcional: limpiar el formulario después de registrar
+        form.reset();
+        });
+    },
+  },
+
   salas: { title: "Reservas de salas", subtitle: "...", render: () => `...` },
   pagos: { title: "Pagos y bonos", subtitle: "...", render: () => `...` },
   reportes: { title: "Reportes", subtitle: "...", render: () => `...` },
