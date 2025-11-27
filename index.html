@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sistema de apoyo a talleres para la tercera edad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --primary: #003c71;
+      --primary-dark: #002746;
+      --primary-light: #0057a6;
+      --accent: #f9b233;
+      --bg: #f4f6fb;
+      --text-main: #222;
+      --text-muted: #666;
+      --sidebar-width: 260px;
+      --radius-lg: 14px;
+      --shadow-soft: 0 6px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top bar */
+
+    .topbar {
+      height: 60px;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .topbar-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 18px;
+    }
+
+    .topbar-title {
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .topbar-subtitle {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease,
+        background 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+    }
+
+    .btn-icon {
+      font-size: 14px;
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-primary {
+      background: #fff;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .menu-toggle {
+      display: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.06);
+      cursor: pointer;
+      margin-right: 8px;
+    }
+
+    /* Layout principal */
+
+    .layout {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Sidebar */
+
+    .sidebar {
+      width: var(--sidebar-width);
+      background: #ffffff;
+      border-right: 1px solid #e3e7f0;
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      margin: 8px 10px 4px;
+    }
+
+    .sidebar-nav {
+      list-style: none;
+    }
+
+    .sidebar-item {
+      margin-bottom: 4px;
+    }
+
+    .sidebar-link {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 14px;
+      color: var(--text-muted);
+      transition: background 0.15s ease, color 0.15s ease,
+        transform 0.1s ease;
+      cursor: pointer;
+    }
+
+    .sidebar-link-icon {
+      width: 22px;
+      text-align: center;
+      font-size: 15px;
+    }
+
+    .sidebar-link.active {
+      background: rgba(0, 60, 113, 0.08);
+      color: var(--primary-dark);
+      font-weight: 600;
+      transform: translateX(1px);
+    }
+
+    .sidebar-link:hover:not(.active) {
+      background: rgba(0, 0, 0, 0.03);
+      color: var(--primary);
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 3px 10px 0;
+    }
+
+    /* Contenido principal */
+
+    .main {
+      flex: 1;
+      padding: 20px 28px;
+      overflow-y: auto;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid #e2e6f0;
+      color: var(--text-muted);
+    }
+
+    /* Tarjetas */
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2.3fr) minmax(0, 1.7fr);
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      padding: 18px 20px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .card-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .card-badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(0, 60, 113, 0.06);
+      color: var(--primary-dark);
+    }
+
+    .banner {
+      background: linear-gradient(
+        120deg,
+        var(--primary-dark),
+        var(--primary-light)
+      );
+      color: #fff;
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 18px;
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .banner-text-main {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .banner-text-sub {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .banner-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .banner-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      opacity: 0.9;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #35c759;
+    }
+
+    /* Listas */
+
+    .list {
+      list-style: none;
+      margin-top: 6px;
+    }
+
+    .list-item {
+      padding: 7px 0;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px dashed #ecf0f7;
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .chip {
+      font-size: 11px;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: #f3f5fb;
+      color: var(--text-muted);
+    }
+
+    .chip-strong {
+      background: rgba(249, 178, 51, 0.12);
+      color: #b57200;
+    }
+
+    .muted {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    /* Responsive */
+
+    @media (max-width: 900px) {
+      .menu-toggle {
+        display: inline-flex;
+      }
+
+      .layout {
+        position: relative;
+      }
+
+      .sidebar {
+        position: fixed;
+        top: 60px;
+        left: -260px;
+        height: calc(100vh - 60px);
+        z-index: 200;
+        transition: left 0.2s ease;
+      }
+
+      .sidebar.open {
+        left: 0;
+      }
+
+      .main {
+        padding: 18px 16px;
+      }
+
+      .cards-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 520px) {
+      .topbar-title {
+        font-size: 15px;
+      }
+      .topbar-subtitle {
+        display: none;
+      }
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Barra superior -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">
+        ☰
+      </button>
+      <div class="topbar-logo">TA</div>
+      <div>
+        <div class="topbar-title">Talleres Adulto Mayor</div>
+        <div class="topbar-subtitle">
+          Sistema de apoyo a talleres para la tercera edad
+        </div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost">
+        <span class="btn-icon">👤</span>
+        <span>Perfil</span>
+      </button>
+      <button class="btn btn-primary">
+        <span class="btn-icon">⎋</span>
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Menú lateral -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-section-title">Navegación</div>
+      <ul class="sidebar-nav">
+        <li class="sidebar-item">
+          <a class="sidebar-link active" data-view="inicio">
+            <span class="sidebar-link-icon">🏠</span>
+            <span>Inicio</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" data-view="usuarios">
+            <span class="sidebar-link-icon">👥</span>
+            <span>Gestión de usuarios</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" data-view="talleres">
+            <span class="sidebar-link-icon">📚</span>
+            <span>Talleres</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" data-view="inscripciones">
+            <span class="sidebar-link-icon">📝</span>
+            <span>Inscripciones</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" data-view="postulaciones">
+            <span class="sidebar-link-icon">⭐</span>
+            <span>Postulaciones a instructor</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" data-view="salas">
+            <span class="sidebar-link-icon">🏫</span>
+            <span>Reservas de salas</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" data-view="pagos">
+            <span class="sidebar-link-icon">💳</span>
+            <span>Pagos y bonos</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" data-view="reportes">
+            <span class="sidebar-link-icon">📊</span>
+            <span>Reportes</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-section-title">Sistema</div>
+      <ul class="sidebar-nav">
+        <li class="sidebar-item">
+          <a class="sidebar-link" data-view="ayuda">
+            <span class="sidebar-link-icon">❓</span>
+            <span>Ayuda</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" data-view="configuracion">
+            <span class="sidebar-link-icon">⚙️</span>
+            <span>Configuración</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div>Usuario: <strong>Funcionario Municipal</strong></div>
+        <div class="muted">Municipalidad de Puente Alto</div>
+      </div>
+    </aside>
+
+    <!-- Contenido principal -->
+    <main class="main">
+      <div id="viewContainer">
+        <!-- El contenido se rellena desde JS -->
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ====== Datos de vistas (texto demo) ======
+    const views = {
+      inicio: {
+        title: "Inicio",
+        subtitle:
+          "Resumen del sistema y accesos rápidos a las principales tareas.",
+        render: () => `
+          <section class="banner">
+            <div>
+              <div class="banner-text-main">
+                Bienvenido/a al sistema de apoyo a talleres
+              </div>
+              <div class="banner-text-sub">
+                Desde aquí puedes gestionar usuarios, talleres, inscripciones,
+                pagos y reportes para los adultos mayores de la comuna.
+              </div>
+            </div>
+            <div class="banner-right">
+              <span class="status-dot"></span>
+              <span>Ambiente de demostración (MVP)</span>
+            </div>
+          </section>
+
+          <section class="page-header">
+            <div>
+              <h1 class="page-title">Panel general</h1>
+              <p class="page-subtitle">
+                Atajos a los procesos más usados por los funcionarios municipales.
+              </p>
+            </div>
+            <div class="pill">
+              <span class="banner-dot"></span>
+              <span>Sesión activa: Hoy</span>
+            </div>
+          </section>
+
+          <section class="cards-grid">
+            <article class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Próximos talleres</div>
+                  <div class="card-subtitle">
+                    Talleres con cupos disponibles para inscripción.
+                  </div>
+                </div>
+                <span class="card-badge">Vista rápida</span>
+              </div>
+              <ul class="list">
+                <li class="list-item">
+                  <span>Gimnasia suave para adultos mayores</span>
+                  <span class="chip">12 cupos</span>
+                </li>
+                <li class="list-item">
+                  <span>Taller de memoria y estimulación cognitiva</span>
+                  <span class="chip">5 cupos</span>
+                </li>
+                <li class="list-item">
+                  <span>Manualidades y arte terapéutico</span>
+                  <span class="chip chip-strong">Últimos cupos</span>
+                </li>
+              </ul>
+            </article>
+
+            <article class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Tareas pendientes</div>
+                  <div class="card-subtitle">
+                    Acciones recomendadas para hoy.
+                  </div>
+                </div>
+              </div>
+              <ul class="list">
+                <li class="list-item">
+                  <span>Revisar postulaciones a instructor</span>
+                  <span class="chip">3 pendientes</span>
+                </li>
+                <li class="list-item">
+                  <span>Confirmar reservas de salas</span>
+                  <span class="chip">2 por revisar</span>
+                </li>
+                <li class="list-item">
+                  <span>Generar reporte de asistencia mensual</span>
+                  <span class="chip">1 tarea</span>
+                </li>
+              </ul>
+            </article>
+          </section>
+        `,
+      },
+      usuarios: {
+        title: "Gestión de usuarios",
+        subtitle:
+          "Registrar adultos mayores, instructores, aspirantes y funcionarios.",
+        render: () => `
+          <section class="page-header">
+            <div>
+              <h1 class="page-title">Gestión de usuarios</h1>
+              <p class="page-subtitle">
+                Desde esta vista se administran las cuentas y perfiles del sistema:
+                AdultoMayor, Instructor, Aspirante, Funcionario y Administrador.
+              </p>
+            </div>
+            <div class="pill">CU-001a · Registrar usuario y asignar perfil</div>
+          </section>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Acciones disponibles</div>
+                <div class="card-subtitle">
+                  Las siguientes opciones simulan el flujo de registro.
+                </div>
+              </div>
+            </div>
+            <ul class="list">
+              <li class="list-item">
+                <span>Crear nuevo adulto mayor</span>
+                <span class="chip">Formulario de registro</span>
+              </li>
+              <li class="list-item">
+                <span>Registrar aspirante a instructor</span>
+                <span class="chip">Asociar a Persona</span>
+              </li>
+              <li class="list-item">
+                <span>Asignar o cambiar perfil de usuario</span>
+                <span class="chip">Roles y permisos</span>
+              </li>
+            </ul>
+            <p class="muted" style="margin-top:10px;">
+              Nota: En el prototipo, estas acciones son solo ilustrativas. Para
+              el desarrollo real se conectarán a servicios REST y a la base de datos
+              definida en el DAS.
+            </p>
+          </article>
+        `,
+      },
+      talleres: {
+        title: "Talleres",
+        subtitle:
+          "Crear y administrar la información de los talleres disponibles.",
+        render: () => `
+          <section class="page-header">
+            <div>
+              <h1 class="page-title">Talleres</h1>
+              <p class="page-subtitle">
+                Alta, modificación, publicación y cierre de talleres orientados a
+                adultos mayores.
+              </p>
+            </div>
+            <div class="pill">Entidad: Taller · Tabla TB-008</div>
+          </section>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Catálogo de talleres (demo)</div>
+                <div class="card-subtitle">
+                  Ejemplo de cómo podría visualizarse el listado principal.
+                </div>
+              </div>
+            </div>
+            <ul class="list">
+              <li class="list-item">
+                <span>Gimnasia suave</span>
+                <span class="chip">Activo</span>
+              </li>
+              <li class="list-item">
+                <span>Estimulación cognitiva</span>
+                <span class="chip">En inscripción</span>
+              </li>
+              <li class="list-item">
+                <span>Manualidades creativas</span>
+                <span class="chip">Cerrado</span>
+              </li>
+            </ul>
+          </article>
+        `,
+      },
+      inscripciones: {
+        title: "Inscripciones",
+        subtitle:
+          "Registrar y gestionar la participación de adultos mayores en talleres.",
+        render: () => `
+          <section class="page-header">
+            <div>
+              <h1 class="page-title">Inscripciones</h1>
+              <p class="page-subtitle">
+                Módulo para inscribir participantes, revisar listas y controlar
+                asistencia.
+              </p>
+            </div>
+            <div class="pill">Entidad: Inscripción · Tabla TB-011</div>
+          </section>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Flujos principales</div>
+                <div class="card-subtitle">
+                  Los flujos se basan en los diagramas de actividad del DAS.
+                </div>
+              </div>
+            </div>
+            <ul class="list">
+              <li class="list-item">
+                <span>Buscar adulto mayor por RUT</span>
+                <span class="chip">Paso 1</span>
+              </li>
+              <li class="list-item">
+                <span>Seleccionar taller y confirmar cupo</span>
+                <span class="chip">Paso 2</span>
+              </li>
+              <li class="list-item">
+                <span>Registrar inscripción y emitir comprobante</span>
+                <span class="chip">Paso 3</span>
+              </li>
+            </ul>
+          </article>
+        `,
+      },
+      postulaciones: {
+        title: "Postulaciones a instructor",
+        subtitle:
+          "Evaluar postulaciones y actualizar el estado de los aspirantes.",
+        render: () => `
+          <section class="page-header">
+            <div>
+              <h1 class="page-title">Postulaciones a instructor</h1>
+              <p class="page-subtitle">
+                Vista utilizada por el funcionario municipal para analizar y
+                aprobar o rechazar postulaciones.
+              </p>
+            </div>
+            <div class="pill">CU-003a · Evaluar postulaciones a instructor</div>
+          </section>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Postulaciones recientes</div>
+                <div class="card-subtitle">
+                  Ejemplo de tabla con estado de cada aspirante.
+                </div>
+              </div>
+            </div>
+            <ul class="list">
+              <li class="list-item">
+                <span>María López – Taller de memoria</span>
+                <span class="chip">En evaluación</span>
+              </li>
+              <li class="list-item">
+                <span>Carlos Pérez – Gimnasia suave</span>
+                <span class="chip chip-strong">Prioritario</span>
+              </li>
+              <li class="list-item">
+                <span>Ana Torres – Manualidades</span>
+                <span class="chip">Aceptado</span>
+              </li>
+            </ul>
+          </article>
+        `,
+      },
+      salas: {
+        title: "Reservas de salas",
+        subtitle:
+          "Administrar salas físicas y reservas asociadas a cada taller.",
+        render: () => `
+          <section class="page-header">
+            <div>
+              <h1 class="page-title">Reservas de salas</h1>
+              <p class="page-subtitle">
+                Permite asignar salas a talleres, modificar reservas y evitar
+                solapamientos.
+              </p>
+            </div>
+            <div class="pill">CU-005a · Modificar reserva de salas</div>
+          </section>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Calendario semanal (mockup)</div>
+                <div class="card-subtitle">
+                  En el desarrollo real podría reemplazarse por un calendario
+                  interactivo.
+                </div>
+              </div>
+            </div>
+            <p class="muted">
+              Aquí podrías dibujar una tabla HTML simple con días y bloques de
+              horario para el prototipo, o incluir una imagen de ejemplo.
+            </p>
+          </article>
+        `,
+      },
+      pagos: {
+        title: "Pagos y bonos",
+        subtitle:
+          "Configurar parámetros y generar pagos según la asistencia y evaluaciones.",
+        render: () => `
+          <section class="page-header">
+            <div>
+              <h1 class="page-title">Pagos y bonos</h1>
+              <p class="page-subtitle">
+                Configuración de parámetros y cálculo de pagos a instructores
+                según el CU-006a y la entidad PagoInstructor.
+              </p>
+            </div>
+            <div class="pill">ParámetroPago · PagoInstructor</div>
+          </section>
+
+          <section class="cards-grid">
+            <article class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Parámetros de cálculo</div>
+                  <div class="card-subtitle">
+                    Valores base, tope de bonos y reglas de ponderación.
+                  </div>
+                </div>
+              </div>
+              <ul class="list">
+                <li class="list-item">
+                  <span>Valor base por taller</span>
+                  <span class="chip">$20.000</span>
+                </li>
+                <li class="list-item">
+                  <span>Bono por alta evaluación (&gt; 4,5)</span>
+                  <span class="chip">$5.000</span>
+                </li>
+                <li class="list-item">
+                  <span>Bono por asistencia sobre 90%</span>
+                  <span class="chip">$3.000</span>
+                </li>
+              </ul>
+            </article>
+            <article class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Resumen de pagos (demo)</div>
+                  <div class="card-subtitle">
+                    Muestra de cómo luciría un listado de pagos generados.
+                  </div>
+                </div>
+              </div>
+              <ul class="list">
+                <li class="list-item">
+                  <span>Instructor: María López</span>
+                  <span class="chip">$120.000</span>
+                </li>
+                <li class="list-item">
+                  <span>Instructor: Carlos Pérez</span>
+                  <span class="chip">$98.000</span>
+                </li>
+              </ul>
+            </article>
+          </section>
+        `,
+      },
+      reportes: {
+        title: "Reportes",
+        subtitle:
+          "Generar reportes de gestión sobre talleres, asistencia y pagos.",
+        render: () => `
+          <section class="page-header">
+            <div>
+              <h1 class="page-title">Reportes</h1>
+              <p class="page-subtitle">
+                Vista para que el Administrador del sistema genere indicadores
+                clave: asistencia, satisfacción, uso de salas y costos.
+              </p>
+            </div>
+            <div class="pill">Entidad: Reporte · Tabla TB-004</div>
+          </section>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Reportes típicos del sistema</div>
+                <div class="card-subtitle">
+                  Estos ejemplos te pueden servir para la presentación en clase.
+                </div>
+              </div>
+            </div>
+            <ul class="list">
+              <li class="list-item">
+                <span>Reporte de asistencia por taller</span>
+                <span class="chip">Mensual</span>
+              </li>
+              <li class="list-item">
+                <span>Reporte de satisfacción (evaluación de talleres)</span>
+                <span class="chip">Trimestral</span>
+              </li>
+              <li class="list-item">
+                <span>Reporte de pagos y bonos por instructor</span>
+                <span class="chip">Mensual</span>
+              </li>
+            </ul>
+          </article>
+        `,
+      },
+      ayuda: {
+        title: "Ayuda",
+        subtitle:
+          "Orientación para el uso del sistema por parte de adultos mayores y funcionarios.",
+        render: () => `
+          <section class="page-header">
+            <div>
+              <h1 class="page-title">Ayuda</h1>
+              <p class="page-subtitle">
+                Sección pensada para ofrecer tutoriales simples, preguntas
+                frecuentes e información de contacto.
+              </p>
+            </div>
+            <div class="pill">Escenario EC-006 · Usabilidad y aprendizaje</div>
+          </section>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Guía rápida para adultos mayores</div>
+                <div class="card-subtitle">
+                  Texto grande, mensajes claros y pasos numerados.
+                </div>
+              </div>
+            </div>
+            <p class="muted">
+              En la versión final puedes incluir videos cortos, imágenes o
+              capturas de pantalla con flechas indicando dónde hacer clic.
+            </p>
+          </article>
+        `,
+      },
+      configuracion: {
+        title: "Configuración",
+        subtitle:
+          "Opciones generales del sistema y parámetros técnicos para el administrador.",
+        render: () => `
+          <section class="page-header">
+            <div>
+              <h1 class="page-title">Configuración</h1>
+              <p class="page-subtitle">
+                Preferencias generales, parámetros globales y datos de la
+                municipalidad.
+              </p>
+            </div>
+            <div class="pill">Perfil: Administrador del sistema</div>
+          </section>
+
+          <article class="card">
+            <p class="muted">
+              Para el MVP puedes simular campos como "Nombre de la municipalidad",
+              "Logo institucional", "Correo de contacto" y otros ajustes básicos.
+            </p>
+          </article>
+        `,
+      },
+    };
+
+    // ====== Render inicial ======
+    const viewContainer = document.getElementById("viewContainer");
+
+    function renderView(viewKey) {
+      const view = views[viewKey] || views.inicio;
+      viewContainer.innerHTML = view.render();
+    }
+
+    renderView("inicio");
+
+    // ====== Comportamiento del menú ======
+    const sidebar = document.getElementById("sidebar");
+    const menuToggle = document.getElementById("menuToggle");
+
+    menuToggle.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+    });
+
+    document.querySelectorAll(".sidebar-link").forEach((link) => {
+      link.addEventListener("click", () => {
+        const viewKey = link.dataset.view;
+        // Cambiar estado activo
+        document
+          .querySelectorAll(".sidebar-link")
+          .forEach((l) => l.classList.remove("active"));
+        link.classList.add("active");
+
+        // Cargar vista
+        renderView(viewKey);
+
+        // Cerrar menú en móvil
+        if (window.innerWidth <= 900) {
+          sidebar.classList.remove("open");
+        }
+      });
+    });
+  </script>
+</body>
+</html>
