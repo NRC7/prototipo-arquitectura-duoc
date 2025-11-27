@@ -19,6 +19,20 @@ const talleresData = [
 
 const aspirantesData = [];
 
+// Instructores disponibles (pensado como futuro JSON/tabla Instructor)
+const instructoresDummy = [
+  { id: 1, nombre: "María Pérez" },
+  { id: 2, nombre: "Juan Soto" },
+  { id: 3, nombre: "Ana González" },
+];
+
+// Salas disponibles (pensado como futura tabla Sala)
+const salasDummy = [
+  { id: 1, nombre: "Sala 1" },
+  { id: 2, nombre: "Sala 2" },
+  { id: 3, nombre: "Sala 3" },
+];
+
 // Vistas
 const views = {
   inicio: { title: "Inicio", subtitle: "...", render: () => `...` },
@@ -262,6 +276,252 @@ const views = {
         // Mensaje final del diagrama
         mensajeTaller.textContent = "Inscripción registrada exitosamente.";
         });
+    },
+  },
+
+  gestionTalleres: {
+    title: "Gestión de talleres",
+    subtitle: "CU-004 – Registrar talleres",
+    render: () => `
+      <section class="page-header">
+        <div>
+          <h1 class="page-title">Registrar nuevo taller</h1>
+          <p class="page-subtitle">
+            Flujo basado en el diagrama de actividad: registro de taller, validación,
+            verificación de duplicados, disponibilidad de instructor y sala.
+          </p>
+        </div>
+      </section>
+
+      <section class="cards-grid cards-grid-column">
+        <!-- Card: Formulario de registro de taller -->
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Formulario de registro de taller</div>
+              <div class="card-subtitle">
+                Complete los datos requeridos para registrar un nuevo taller.
+              </div>
+            </div>
+          </div>
+
+          <form id="formRegistrarTaller" class="inscripcion-form">
+            <div class="form-row">
+              <label class="form-label">
+                Nombre del taller
+                <input type="text" id="nombreTaller" class="form-input"
+                       placeholder="Ej: Gimnasia funcional para adultos mayores" />
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">
+                Día
+                <select id="diaTaller" class="form-input">
+                  <option value="">Seleccione un día</option>
+                  <option value="Lunes">Lunes</option>
+                  <option value="Martes">Martes</option>
+                  <option value="Miércoles">Miércoles</option>
+                  <option value="Jueves">Jueves</option>
+                  <option value="Viernes">Viernes</option>
+                </select>
+              </label>
+              <label class="form-label">
+                Hora (HH:MM)
+                <input type="text" id="horaTaller" class="form-input"
+                       placeholder="10:00" />
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">
+                Instructor
+                <select id="instructorTaller" class="form-input">
+                  <option value="">Seleccione un instructor</option>
+                  ${instructoresDummy
+                    .map((i) => `<option value="${i.id}">${i.nombre}</option>`)
+                    .join("")}
+                </select>
+              </label>
+
+              <label class="form-label">
+                Sala
+                <select id="salaTaller" class="form-input">
+                  <option value="">Seleccione una sala</option>
+                  ${salasDummy
+                    .map((s) => `<option value="${s.id}">${s.nombre}</option>`)
+                    .join("")}
+                </select>
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">
+                Cupos totales
+                <input type="number" id="cuposTaller" class="form-input"
+                       min="1" placeholder="Ej: 15" />
+              </label>
+            </div>
+
+            <button type="submit" class="btn-link">
+              Registrar nuevo taller
+            </button>
+            <p id="mensajeRegistrarTaller" class="muted" style="margin-top:8px;"></p>
+          </form>
+        </article>
+
+        <!-- Card: Listado de talleres disponibles -->
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Listado de talleres disponibles</div>
+              <div class="card-subtitle">
+                Se actualiza automáticamente cada vez que se registra un taller.
+              </div>
+            </div>
+          </div>
+
+          <ul class="list" id="listaTalleresRegistrados"></ul>
+        </article>
+      </section>
+    `,
+    init: function () {
+      const form = document.getElementById("formRegistrarTaller");
+      const mensaje = document.getElementById("mensajeRegistrarTaller");
+      const lista = document.getElementById("listaTalleresRegistrados");
+
+      if (!form || !lista) return;
+
+      // Renderiza el listado de talleres existentes
+      function renderListadoTalleres() {
+        if (!talleresData.length) {
+          lista.innerHTML = `
+            <li class="list-item">
+              <span>No hay talleres registrados.</span>
+            </li>`;
+          return;
+        }
+
+        lista.innerHTML = talleresData
+          .map((t) => {
+            const instructor = instructoresDummy.find((i) => i.id === t.instructorId);
+            const sala = salasDummy.find((s) => s.id === t.salaId);
+            return `
+              <li class="list-item">
+                <div>
+                  <strong>${t.nombre}</strong>
+                  <div class="muted">
+                    ${t.dia} ${t.hora} · ${t.cupos} cupos ·
+                    Instr.: ${instructor ? instructor.nombre : "N/D"} ·
+                    Sala: ${sala ? sala.nombre : "N/D"}
+                  </div>
+                </div>
+              </li>
+            `;
+          })
+          .join("");
+      }
+
+      renderListadoTalleres();
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        mensaje.textContent = "";
+
+        const nombre = document.getElementById("nombreTaller").value.trim();
+        const dia = document.getElementById("diaTaller").value;
+        const hora = document.getElementById("horaTaller").value.trim();
+        const instructorId = parseInt(
+          document.getElementById("instructorTaller").value,
+          10
+        );
+        const salaId = parseInt(
+          document.getElementById("salaTaller").value,
+          10
+        );
+        const cuposStr = document.getElementById("cuposTaller").value.trim();
+        const cupos = parseInt(cuposStr, 10);
+
+        const horaValida = /^\d{2}:\d{2}$/.test(hora);
+
+        // [¿Datos correctos?] -> validación
+        if (
+          !nombre ||
+          !dia ||
+          !horaValida ||
+          !instructorId ||
+          !salaId ||
+          !cupos ||
+          cupos <= 0
+        ) {
+          mensaje.textContent = "Datos incompletos o con formato incorrecto.";
+          return;
+        }
+
+        const nombreKey = nombre.toLowerCase();
+
+        // [¿Existe un taller duplicado?]
+        const duplicado = talleresData.some(
+          (t) =>
+            t.nombre.toLowerCase() === nombreKey &&
+            t.dia === dia &&
+            t.hora === hora
+        );
+
+        if (duplicado) {
+          mensaje.textContent =
+            "Ya existe un taller con ese nombre y horario.";
+          return;
+        }
+
+        // Revisar disponibilidad instructor
+        const instructorOcupado = talleresData.some(
+          (t) => t.instructorId === instructorId && t.dia === dia && t.hora === hora
+        );
+
+        if (instructorOcupado) {
+          mensaje.textContent =
+            "Instructor no disponible en esa franja horaria.";
+          return;
+        }
+
+        // Verificar disponibilidad sala asignada
+        const salaOcupada = talleresData.some(
+          (t) => t.salaId === salaId && t.dia === dia && t.hora === hora
+        );
+
+        if (salaOcupada) {
+          mensaje.textContent = "Sala ocupada en ese horario.";
+          return;
+        }
+
+        // Registrar nuevo taller
+        const nuevoId =
+          talleresData.length > 0
+            ? Math.max(...talleresData.map((t) => t.id)) + 1
+            : 1;
+
+        const nuevoTaller = {
+          id: nuevoId,
+          nombre,
+          dia,
+          hora,
+          instructorId,
+          salaId,
+          cupos,
+        };
+
+        talleresData.push(nuevoTaller);
+
+        // Actualizar listado
+        renderListadoTalleres();
+
+        // Mensaje final del diagrama
+        mensaje.textContent = "Taller registrado correctamente.";
+
+        // Limpiar formulario
+        form.reset();
+      });
     },
   },
 
