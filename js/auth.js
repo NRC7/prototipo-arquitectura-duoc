@@ -82,9 +82,23 @@ function handleLogin() {
     loginContainer.style.display = "none";
     appContainer.style.display = "flex"; // ocupa toda la pantalla
     messageEl.textContent = "";
+
+    // Volver al inicio y limpiar contenido viejo
+    if (typeof renderView === "function") {
+        renderView("inicio");
+    }
+
+    // Resetear opción activa del sidebar
+    const links = document.querySelectorAll(".sidebar-link");
+    links.forEach((l) => l.classList.remove("active"));
+    const linkInicio = document.querySelector('.sidebar-link[data-view="inicio"]');
+    if (linkInicio) {
+        linkInicio.classList.add("active");
+    }
+
     return;
   }
-
+  
   let attempts = Number(localStorage.getItem("loginAttempts") || 0);
   attempts++;
   localStorage.setItem("loginAttempts", attempts);
@@ -124,7 +138,7 @@ function logout() {
 
 // Botón "Cerrar sesión" del topbar (tiene clase .btn-primary)
 document.addEventListener("click", (e) => {
-  const logoutButton = e.target.closest(".btn-primary");
+  const logoutButton = e.target.closest("#btnLogout");
   if (logoutButton && appContainer.style.display !== "none") {
     logout();
   }

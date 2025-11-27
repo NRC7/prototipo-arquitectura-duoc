@@ -4,7 +4,13 @@ const viewContainer = document.getElementById("viewContainer");
 function renderView(viewKey) {
   const view = views[viewKey] || views.inicio;
   viewContainer.innerHTML = view.render();
+
+  // Si la vista define lógica propia, la ejecutamos
+  if (typeof view.init === "function") {
+    view.init();
+  }
 }
+
 
 renderView("inicio");
 

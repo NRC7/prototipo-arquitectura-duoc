@@ -535,3 +535,97 @@
     padding: 20px 18px 18px;
   }
 }
+
+/* Formulario CU-002 – Inscribir adulto mayor en taller */
+.inscripcion-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.form-label {
+  font-size: 13px;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.form-input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #d0d6e5;
+  font-size: 14px;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 2px rgba(0, 60, 113, 0.12);
+}
+
+/* Botón pequeño para la lista de talleres */
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+  box-shadow: none;
+}
+
+/* Botón tipo texto para "Registrar participante" */
+.btn-link {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  padding: 6px 0;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 999px;
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-link:hover {
+  color: var(--primary-dark);
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
+.cards-grid-column {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Botón de seleccionar taller */
+.btn-taller-select {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: var(--primary);
+}
+
+.btn-taller-select:hover {
+  color: var(--primary-dark);
+}
+
+.btn-taller-select[disabled] {
+  cursor: default;
+  color: var(--text-muted);
+}
+
+/* Estado del botón cuando el adulto mayor ya está inscrito en ese taller */
+.btn-taller-inscrito {
+  cursor: default;
+  color: var(--text-muted);
+}
