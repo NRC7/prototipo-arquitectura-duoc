@@ -645,3 +645,27 @@
   color: #0b3f7a;             /* azul un poco más oscuro al pasar el mouse */
   text-decoration: underline; /* efecto link al hover */
 }
+
+.table-report {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table-report th,
+.table-report td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.table-report th {
+  font-weight: 600;
+}
+
+/* Fila específica para la descarga de reportes: texto + botón juntos */
+.form-row-download {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+}

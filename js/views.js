@@ -1442,7 +1442,355 @@ const views = {
     },
   },
 
-  reportes: { title: "Reportes", subtitle: "...", render: () => `...` },
+  reportes: {
+    title: "Generar reportes",
+    subtitle: "CU-008 – Generar reportes",
+    render: () => `
+      <section class="page-header">
+        <div>
+          <h1 class="page-title">Generar reportes</h1>
+          <p class="page-subtitle">
+            Flujo basado en el diagrama de actividad: selección de período, tipo de informe,
+            visualización y descarga en PDF.
+          </p>
+        </div>
+      </section>
+
+      <section class="cards-grid cards-grid-column">
+        <!-- Card 1: Generar reporte -->
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Parámetros del informe</div>
+              <div class="card-subtitle">
+                Seleccione el período de tiempo y el tipo de informe que desea generar.
+              </div>
+            </div>
+          </div>
+
+          <form id="formReporte" class="inscripcion-form">
+            <div class="form-row">
+              <label class="form-label">
+                Desde
+                <input type="date" id="fechaDesde" class="form-input" />
+              </label>
+              <label class="form-label">
+                Hasta
+                <input type="date" id="fechaHasta" class="form-input" />
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">
+                Tipo de informe
+                <select id="tipoInforme" class="form-input">
+                  <option value="">Seleccione tipo de informe</option>
+                  <option value="asistencia">Asistencia por taller</option>
+                  <option value="inscripciones">Inscripciones por período</option>
+                  <option value="pagos">Pagos y abonos a instructores</option>
+                </select>
+              </label>
+            </div>
+
+            <button type="submit" class="btn-link">Generar informe</button>
+            <p id="mensajeReporte" class="muted" style="margin-top:8px;"></p>
+          </form>
+        </article>
+
+        <!-- Card 2: Informe generado -->
+        <article class="card" id="cardResultadoReporte" style="display:none;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Informe generado</div>
+              <div class="card-subtitle">
+                Vista previa del informe generado según los parámetros seleccionados.
+              </div>
+            </div>
+          </div>
+
+          <div id="reporteResumen" class="muted" style="margin-bottom:12px;"></div>
+          <div id="reporteContenido"></div>
+
+          <hr class="card-separator"/>
+
+          <div class="form-row form-row-download">
+            <p class="muted" style="margin:0;">¿Quieres descargar el informe?</p>
+            <button type="button" id="btnDescargarReporte" class="btn-link">
+              Descargar PDF
+            </button>
+          </div>
+
+          <p id="mensajeDescarga" class="muted" style="margin-top:8px;"></p>
+        </article>
+      </section>
+    `,
+    init: function () {
+      const formReporte = document.getElementById("formReporte");
+      const fechaDesdeInput = document.getElementById("fechaDesde");
+      const fechaHastaInput = document.getElementById("fechaHasta");
+      const tipoInformeSelect = document.getElementById("tipoInforme");
+      const mensajeReporte = document.getElementById("mensajeReporte");
+
+      const cardResultado = document.getElementById("cardResultadoReporte");
+      const reporteResumen = document.getElementById("reporteResumen");
+      const reporteContenido = document.getElementById("reporteContenido");
+      const btnDescargar = document.getElementById("btnDescargarReporte");
+      const mensajeDescarga = document.getElementById("mensajeDescarga");
+
+      if (!formReporte) return;
+
+      let ultimoReporte = null; // para saber qué descargar
+
+      // ===== Generar informe (mostrar en pantalla) =====
+      formReporte.addEventListener("submit", function (e) {
+        e.preventDefault();
+        mensajeReporte.textContent = "";
+        mensajeDescarga.textContent = "";
+        reporteContenido.innerHTML = "";
+        reporteResumen.textContent = "";
+        cardResultado.style.display = "none";
+        ultimoReporte = null;
+
+        const desde = fechaDesdeInput.value;
+        const hasta = fechaHastaInput.value;
+        const tipo = tipoInformeSelect.value;
+
+        // Validación básica según diagrama (datos correctos?)
+        const fechasCompletas = !!desde && !!hasta && desde <= hasta;
+        const tipoValido = !!tipo;
+
+        if (!fechasCompletas || !tipoValido) {
+          mensajeReporte.textContent =
+            "Datos incompletos o con formato incorrecto. Verifique fechas y tipo de informe.";
+          return;
+        }
+
+        // "Obtener datos" y "Generar informe según template" (mock)
+        let titulo = "";
+        let filas = [];
+
+        if (tipo === "asistencia") {
+          titulo = "Informe de asistencia por taller";
+          filas = [
+            { nombre: "Gimnasia suave adultos mayores", asistencias: 18 },
+            { nombre: "Memoria y estimulación cognitiva", asistencias: 15 },
+            { nombre: "Manualidades y arte terapéutico", asistencias: 20 },
+          ];
+        } else if (tipo === "inscripciones") {
+          titulo = "Informe de inscripciones por período";
+          filas = [
+            { descripcion: "Nuevos inscritos", cantidad: 12 },
+            { descripcion: "Reinscritos", cantidad: 8 },
+            { descripcion: "Bajas", cantidad: 2 },
+          ];
+        } else if (tipo === "pagos") {
+          titulo = "Informe de pagos y abonos a instructores";
+          filas = [
+            { descripcion: "Pagos de honorarios", monto: "$1.200.000" },
+            { descripcion: "Bonos por asistencia", monto: "$300.000" },
+            { descripcion: "Bonos por calidad", monto: "$150.000" },
+          ];
+        }
+
+        // Resumen textual
+        reporteResumen.textContent =
+          `${titulo} para el período ${desde} a ${hasta}. (Datos simulados para prototipo.)`;
+
+        // Contenido según tipo (tabla muy simple)
+        if (tipo === "asistencia") {
+          reporteContenido.innerHTML = `
+            <table class="table-report">
+              <thead>
+                <tr>
+                  <th>Taller</th>
+                  <th>Asistencias registradas</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filas
+                  .map(
+                    (f) => `
+                  <tr>
+                    <td>${f.nombre}</td>
+                    <td>${f.asistencias}</td>
+                  </tr>`
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          `;
+        } else if (tipo === "inscripciones") {
+          reporteContenido.innerHTML = `
+            <table class="table-report">
+              <thead>
+                <tr>
+                  <th>Detalle</th>
+                  <th>Cantidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filas
+                  .map(
+                    (f) => `
+                  <tr>
+                    <td>${f.descripcion}</td>
+                    <td>${f.cantidad}</td>
+                  </tr>`
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          `;
+        } else if (tipo === "pagos") {
+          reporteContenido.innerHTML = `
+            <table class="table-report">
+              <thead>
+                <tr>
+                  <th>Concepto</th>
+                  <th>Monto</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filas
+                  .map(
+                    (f) => `
+                  <tr>
+                    <td>${f.descripcion}</td>
+                    <td>${f.monto}</td>
+                  </tr>`
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          `;
+        }
+
+        // Mostrar card de resultado
+        cardResultado.style.display = "block";
+
+        // Guardar datos del último reporte para la descarga
+        ultimoReporte = {
+          desde,
+          hasta,
+          tipo,
+          titulo,
+          filas,
+        };
+      });
+
+          // Helpers para generar un PDF muy simple (texto en varias líneas)
+      function escapePdfText(text) {
+        return text
+          .replace(/\\/g, "\\\\")
+          .replace(/\(/g, "\\(")
+          .replace(/\)/g, "\\)");
+      }
+
+      function createSimplePdf(lines) {
+        const header = "%PDF-1.3\n";
+        let body = "";
+        const offsets = [];
+        let currentOffset = header.length;
+
+        function addObject(id, content) {
+          const obj = `${id} 0 obj\n${content}\nendobj\n`;
+          offsets[id] = currentOffset;
+          body += obj;
+          currentOffset += obj.length;
+        }
+
+        // Contenido de texto del reporte
+        // Partimos en (72, 800) y luego bajamos 14 puntos por línea
+        let contentStream = "BT\n/F1 10 Tf\n72 800 Td\n";
+        lines.forEach((line) => {
+          contentStream += `(${escapePdfText(line)}) Tj\n0 -14 Td\n`;
+        });
+        contentStream += "ET\n";
+
+        // Objetos PDF básicos
+        addObject(1, "<< /Type /Catalog /Pages 2 0 R >>");
+        addObject(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+        addObject(
+          3,
+          "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>"
+        );
+        addObject(
+          4,
+          `<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream`
+        );
+        addObject(5, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+
+        // Tabla xref
+        const xrefOffset = header.length + body.length;
+        let xref = "xref\n0 6\n0000000000 65535 f \n";
+        for (let i = 1; i <= 5; i++) {
+          const off = offsets[i];
+          xref += String(off).padStart(10, "0") + " 00000 n \n";
+        }
+
+        const trailer =
+          `trailer\n<< /Size 6 /Root 1 0 R >>\n` +
+          `startxref\n${xrefOffset}\n%%EOF\n`;
+
+        return header + body + xref + trailer;
+      }
+
+      // ===== Descargar informe en PDF (prototipo sencillo) =====
+      btnDescargar.addEventListener("click", function () {
+        mensajeDescarga.textContent = "";
+
+        if (!ultimoReporte) {
+          mensajeDescarga.textContent =
+            "Primero debe generar un informe antes de descargar.";
+          return;
+        }
+
+        // Construimos líneas de texto basadas en la tabla mostrada
+        const lines = [];
+        lines.push(ultimoReporte.titulo);
+        lines.push("");
+        lines.push(`Período: ${ultimoReporte.desde} a ${ultimoReporte.hasta}`);
+        lines.push("");
+
+        if (ultimoReporte.tipo === "asistencia") {
+          lines.push("Taller                          Asistencias");
+          lines.push("------------------------------------------");
+          ultimoReporte.filas.forEach((f) => {
+            lines.push(`${f.nombre} - ${f.asistencias} asistencias`);
+          });
+        } else if (ultimoReporte.tipo === "inscripciones") {
+          lines.push("Detalle                         Cantidad");
+          lines.push("----------------------------------------");
+          ultimoReporte.filas.forEach((f) => {
+            lines.push(`${f.descripcion}: ${f.cantidad}`);
+          });
+        } else if (ultimoReporte.tipo === "pagos") {
+          lines.push("Concepto                        Monto");
+          lines.push("-------------------------------------");
+          ultimoReporte.filas.forEach((f) => {
+            lines.push(`${f.descripcion}: ${f.monto}`);
+          });
+        }
+
+        const pdfText = createSimplePdf(lines);
+        const blob = new Blob([pdfText], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const fechaHoy = new Date().toISOString().slice(0, 10);
+
+        a.href = url;
+        a.download = `reporte-${ultimoReporte.tipo}-${fechaHoy}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        mensajeDescarga.textContent =
+          "PDF generado y descargado correctamente (prototipo).";
+      });
+    },
+  },
+
   ayuda: { title: "Ayuda", subtitle: "...", render: () => `...` },
   configuracion: { title: "Configuración", subtitle: "...", render: () => `...` },
 };
