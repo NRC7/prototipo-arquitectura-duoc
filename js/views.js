@@ -33,6 +33,15 @@ const salasDummy = [
   { id: 3, nombre: "Sala 3" },
 ];
 
+// Evaluaciones registradas (mock)
+window.evaluacionesData = window.evaluacionesData || [];
+
+// Relación RUT -> talleres inscritos (mock)
+window.rutTalleresAsociados = window.rutTalleresAsociados || {
+  "11.111.111-1": [1, 2],
+  "22.222.222-2": [3]
+};
+
 // Vistas
 const views = {
   inicio: { title: "Inicio", subtitle: "...", render: () => `...` },
@@ -1002,6 +1011,211 @@ const views = {
 
       });
     },
+  },
+
+  evaluarTaller: {
+    title: "Evaluar taller",
+    subtitle: "CU-007 – Registrar evaluación de taller",
+    render: () => `
+      <section class="page-header">
+        <div>
+          <h1 class="page-title">Evaluar taller</h1>
+          <p class="page-subtitle">
+            Flujo basado en el diagrama: validación de RUT, selección de taller y evaluación.
+          </p>
+        </div>
+      </section>
+
+      <section class="cards-grid cards-grid-column">
+
+        <!-- Card: ingresar RUT -->
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Identificación</div>
+              <div class="card-subtitle">
+                Ingrese su RUT para ver los talleres en los que está registrado.
+              </div>
+            </div>
+          </div>
+
+          <form id="formRutEval" class="inscripcion-form">
+            <div class="form-row">
+              <label class="form-label">
+                RUT participante
+                <input type="text" id="rutEval" class="form-input" placeholder="11.111.111-1" />
+              </label>
+            </div>
+
+            <button type="submit" class="btn-link">Buscar talleres</button>
+            <p id="mensajeRutEval" class="muted" style="margin-top:8px;"></p>
+          </form>
+
+          <ul class="list" id="listadoTalleresEval"></ul>
+        </article>
+
+        <!-- Card: formulario de evaluación -->
+        <article class="card" id="cardFormularioEval" style="display:none;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Formulario de evaluación</div>
+              <div class="card-subtitle">
+                Complete la evaluación del taller seleccionado.
+              </div>
+            </div>
+          </div>
+
+          <form id="formEvalTaller" class="inscripcion-form">
+            <div class="form-row">
+              <label class="form-label">
+                Puntaje (1 a 7)
+                <input type="number" id="puntajeEval" class="form-input" min="1" max="7" />
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">
+                Comentarios
+                <textarea id="comentarioEval" class="form-input" rows="3"
+                placeholder="Comentarios opcionales"></textarea>
+              </label>
+            </div>
+
+            <button type="submit" class="btn-link">Enviar evaluación</button>
+            <p id="mensajeEval" class="muted" style="margin-top:8px;"></p>
+          </form>
+        </article>
+
+        <!-- Card: listado actualizado -->
+        <article class="card" id="cardEvaluaciones" style="display:none;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Evaluaciones realizadas</div>
+              <div class="card-subtitle">
+                Este listado se actualiza cada vez que se envía una evaluación.
+              </div>
+            </div>
+          </div>
+
+          <ul class="list" id="listadoEvaluaciones"></ul>
+        </article>
+
+      </section>
+    `,
+    init: function () {
+      const formRut = document.getElementById("formRutEval");
+      const rutInput = document.getElementById("rutEval");
+      const mensajeRut = document.getElementById("mensajeRutEval");
+      const listadoTalleresEval = document.getElementById("listadoTalleresEval");
+
+      const cardFormularioEval = document.getElementById("cardFormularioEval");
+      const formEval = document.getElementById("formEvalTaller");
+      const puntajeInput = document.getElementById("puntajeEval");
+      const comentarioInput = document.getElementById("comentarioEval");
+      const mensajeEval = document.getElementById("mensajeEval");
+
+      const cardEvaluaciones = document.getElementById("cardEvaluaciones");
+      const listadoEvaluaciones = document.getElementById("listadoEvaluaciones");
+
+      let tallerSeleccionado = null;
+
+      // ====== formateo de RUT visual ======
+      rutInput.addEventListener("input", () => {
+        let val = rutInput.value.replace(/[^0-9kK]/g, "");
+        if (val.length <= 1) {
+          rutInput.value = val;
+          return;
+        }
+        let cuerpo = val.slice(0, -1);
+        let dv = val.slice(-1);
+        cuerpo = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        rutInput.value = `${cuerpo}-${dv}`;
+      });
+
+      // ====== Buscar talleres asociados ======
+      formRut.addEventListener("submit", function (e) {
+        e.preventDefault();
+        mensajeRut.textContent = "";
+        listadoTalleresEval.innerHTML = "";
+        cardFormularioEval.style.display = "none";
+
+        const rut = rutInput.value.trim();
+
+        if (!/^[0-9.]+-[0-9kK]$/.test(rut)) {
+          mensajeRut.textContent = "RUT ingresado no es correcto.";
+          return;
+        }
+
+        const talleresAsociados = window.rutTalleresAsociados[rut];
+
+        if (!talleresAsociados || talleresAsociados.length === 0) {
+          mensajeRut.textContent = "No existen talleres asociados al RUT.";
+          return;
+        }
+
+        // Render listado de talleres
+        listadoTalleresEval.innerHTML = talleresAsociados
+          .map((id) => {
+            const t = talleresData.find((x) => x.id === id);
+            return `
+              <li class="list-item">
+                <span>${t.nombre} (${t.dia} ${t.hora})</span>
+                <button class="btn-link-sm" data-id="${t.id}">Evaluar</button>
+              </li>
+            `;
+          })
+          .join("");
+      });
+
+      // ====== Seleccionar taller ======
+      listadoTalleresEval.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-id]");
+        if (!btn) return;
+
+        const id = parseInt(btn.dataset.id, 10);
+        tallerSeleccionado = talleresData.find((t) => t.id === id);
+
+        if (!tallerSeleccionado) return;
+
+        cardFormularioEval.style.display = "block";
+        mensajeEval.textContent = "";
+        puntajeInput.value = "";
+        comentarioInput.value = "";
+      });
+
+      // ====== Enviar evaluación ======
+      formEval.addEventListener("submit", function (e) {
+        e.preventDefault();
+        mensajeEval.textContent = "";
+
+        const puntaje = parseInt(puntajeInput.value, 10);
+
+        if (!puntaje || puntaje < 1 || puntaje > 7) {
+          mensajeEval.textContent = "Datos ingresados son incorrectos.";
+          return;
+        }
+
+        window.evaluacionesData.push({
+          tallerId: tallerSeleccionado.id,
+          puntaje,
+          comentario: comentarioInput.value.trim()
+        });
+
+        mensajeEval.textContent = "Evaluación enviada exitosamente.";
+        cardEvaluaciones.style.display = "block";
+
+        listadoEvaluaciones.innerHTML = window.evaluacionesData
+          .map((ev) => {
+            const t = talleresData.find((x) => x.id === ev.tallerId);
+            return `
+              <li class="list-item">
+                <strong>${t.nombre}</strong> — Puntaje: ${ev.puntaje}
+                <div class="muted">${ev.comentario || "(Sin comentario)"}</div>
+              </li>`;
+          })
+          .join("");
+      });
+    }
   },
 
   pagos: { title: "Pagos y bonos", subtitle: "...", render: () => `...` },

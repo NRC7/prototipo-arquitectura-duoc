@@ -629,3 +629,19 @@
   cursor: default;
   color: var(--text-muted);
 }
+
+/* Botón de texto pequeño para acciones como "Evaluar" en listas */
+.btn-link-sm {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.875rem;        /* un poco más pequeño que el texto normal */
+  color: #1160b7;             /* mismo tono azul que el resto del sistema */
+  cursor: pointer;
+}
+
+.btn-link-sm:hover {
+  color: #0b3f7a;             /* azul un poco más oscuro al pasar el mouse */
+  text-decoration: underline; /* efecto link al hover */
+}
