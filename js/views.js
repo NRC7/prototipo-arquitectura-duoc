@@ -42,6 +42,9 @@ window.rutTalleresAsociados = window.rutTalleresAsociados || {
   "22.222.222-2": [3]
 };
 
+// Operaciones de pagos / abonos registradas (mock)
+const pagosData = [];
+
 // Vistas
 const views = {
   inicio: { title: "Inicio", subtitle: "...", render: () => `...` },
@@ -1218,7 +1221,227 @@ const views = {
     }
   },
 
-  pagos: { title: "Pagos y bonos", subtitle: "...", render: () => `...` },
+  pagos: {
+    title: "Pagos y abonos a instructores",
+    subtitle: "CU-006 – Generar pagos y abonos a instructores",
+    render: () => `
+      <section class="page-header">
+        <div>
+          <h1 class="page-title">Pagos y abonos a instructores</h1>
+          <p class="page-subtitle">
+            Flujo basado en el diagrama de actividad: nueva operación, validación de datos,
+            envío de pago y comprobante.
+          </p>
+        </div>
+      </section>
+
+      <section class="cards-grid cards-grid-column">
+        <!-- Card 1: Nueva operación -->
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Nueva operación</div>
+              <div class="card-subtitle">
+                Seleccione el tipo de operación, adjunte la autorización y complete los datos del instructor.
+              </div>
+            </div>
+          </div>
+          <form id="formPagoInstructor" class="inscripcion-form" enctype="multipart/form-data">
+            <div class="form-row">
+              <label class="form-label">
+                Tipo de operación
+                <select id="tipoOperacion" class="form-input">
+                  <option value="">Seleccione tipo de operación</option>
+                  <option value="pago">Pago de honorarios</option>
+                  <option value="bono_asistencia">Bono por asistencia</option>
+                  <option value="bono_calidad">Bono por calidad</option>
+                </select>
+              </label>
+
+              <label class="form-label">
+                Autorización (PDF)
+                <input type="file" id="archivoAutorizacion" class="form-input" accept="application/pdf" />
+              </label>
+            </div>
+            <div class="form-row">
+              <label class="form-label">
+                RUT instructor
+                <input type="text" id="rutInstructorPago" class="form-input" placeholder="11.111.111-1" />
+              </label>
+              <label class="form-label">
+                Nº cuenta instructor
+                <input type="text" id="cuentaInstructor" class="form-input" placeholder="Ej: 123456789" />
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">
+                Correo electrónico instructor
+                <input type="email" id="emailInstructor" class="form-input" placeholder="instructor@correo.com" />
+              </label>
+            </div>
+
+            <button type="submit" class="btn-link">Registrar operación</button>
+            <p id="mensajePago" class="muted" style="margin-top:8px;"></p>
+          </form>
+        </article>
+
+        <!-- Card 2: Operaciones registradas -->
+        <article class="card" id="cardOperaciones" style="display:none;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Operaciones registradas</div>
+              <div class="card-subtitle">
+                Listado de pagos y abonos generados a instructores.
+              </div>
+            </div>
+          </div>
+
+          <ul class="list" id="listaOperaciones"></ul>
+        </article>
+      </section>
+    `,
+    init: function () {
+      const form = document.getElementById("formPagoInstructor");
+      const tipoOperacion = document.getElementById("tipoOperacion");
+      const archivoAutorizacion = document.getElementById("archivoAutorizacion");
+      const rutInput = document.getElementById("rutInstructorPago");
+      const cuentaInput = document.getElementById("cuentaInstructor");
+      const emailInput = document.getElementById("emailInstructor");
+      const mensajePago = document.getElementById("mensajePago");
+
+      const cardOperaciones = document.getElementById("cardOperaciones");
+      const listaOperaciones = document.getElementById("listaOperaciones");
+
+      if (!form) return;
+
+      // ===== Formateo visual de RUT (igual que en otros casos) =====
+      rutInput.addEventListener("input", () => {
+        let value = rutInput.value.replace(/[^0-9kK]/g, "").toUpperCase();
+
+        if (value.length <= 1) {
+          rutInput.value = value;
+          return;
+        }
+
+        const cuerpo = value.slice(0, -1);
+        const dv = value.slice(-1);
+        let cuerpoFormateado = "";
+        const reversed = cuerpo.split("").reverse().join("");
+
+        for (let i = 0; i < reversed.length; i++) {
+          if (i > 0 && i % 3 === 0) {
+            cuerpoFormateado = "." + cuerpoFormateado;
+          }
+          cuerpoFormateado = reversed[i] + cuerpoFormateado;
+        }
+
+        rutInput.value = cuerpoFormateado + "-" + dv;
+      });
+
+      function renderOperaciones() {
+        if (!pagosData.length) {
+          listaOperaciones.innerHTML = "";
+          cardOperaciones.style.display = "none";
+          return;
+        }
+
+        cardOperaciones.style.display = "block";
+
+        listaOperaciones.innerHTML = pagosData
+          .map((op) => {
+            return `
+              <li class="list-item">
+                <div>
+                  <strong>${op.tipoLabel}</strong>
+                  <div class="muted">
+                    RUT: ${op.rut} · Cuenta: ${op.cuenta} · PDF: ${op.archivo}
+                  </div>
+                  <div class="muted">
+                    Comprobante enviado a: ${op.email}
+                  </div>
+                </div>
+              </li>
+            `;
+          })
+          .join("");
+      }
+
+      // ===== Enviar formulario (validar y registrar operación) =====
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        mensajePago.textContent = "";
+
+        const rut = rutInput.value.trim();
+        const cuenta = cuentaInput.value.trim();
+        const email = emailInput.value.trim();
+        const tipo = tipoOperacion.value;
+        const archivo = archivoAutorizacion.files[0];
+
+        // Validación de RUT, tipo, cuenta, email y archivo PDF
+        const rutValido = /^[0-9.]+-[0-9K]$/.test(rut);
+        const cuentaValida = cuenta.length >= 4;
+        const emailValido = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+        const tipoValido = !!tipo;
+        const archivoValido =
+          archivo && archivo.name.toLowerCase().endsWith(".pdf");
+
+        if (
+          !rutValido ||
+          !cuentaValida ||
+          !emailValido ||
+          !tipoValido ||
+          !archivoValido
+        ) {
+          mensajePago.textContent =
+            "Datos incompletos o con formato incorrecto.";
+          return;
+        }
+
+        // Etiqueta legible para el tipo
+        let tipoLabel = "";
+        switch (tipo) {
+          case "pago":
+            tipoLabel = "Pago de honorarios";
+            break;
+          case "bono_asistencia":
+            tipoLabel = "Bono por asistencia";
+            break;
+          case "bono_calidad":
+            tipoLabel = "Bono por calidad";
+            break;
+          default:
+            tipoLabel = "Operación";
+        }
+
+        // "Enviar pago o bono" + "Enviar comprobante por email" (mock)
+        pagosData.push({
+          tipo,
+          tipoLabel,
+          rut,
+          cuenta,
+          email,
+          archivo: archivo.name,
+          fecha: new Date().toISOString(),
+        });
+
+        // Mostrar mensaje de éxito
+        mensajePago.textContent =
+          "Operación realizada exitosamente. Comprobante de operación enviado por email.";
+
+        // Limpiar formulario para una nueva operación
+        form.reset();
+        rutInput.value = "";
+
+        // Actualizar listado de operaciones
+        renderOperaciones();
+      });
+
+      // Render inicial (por si había datos previos)
+      renderOperaciones();
+    },
+  },
+
   reportes: { title: "Reportes", subtitle: "...", render: () => `...` },
   ayuda: { title: "Ayuda", subtitle: "...", render: () => `...` },
   configuracion: { title: "Configuración", subtitle: "...", render: () => `...` },
