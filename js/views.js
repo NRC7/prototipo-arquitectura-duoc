@@ -682,7 +682,328 @@ const views = {
     },
   },
 
-  salas: { title: "Reservas de salas", subtitle: "...", render: () => `...` },
+  salas: {
+    title: "Reservar salas para taller",
+    subtitle: "CU-005 – Reservar salas para taller",
+    render: () => `
+      <section class="page-header">
+        <div>
+          <h1 class="page-title">Administrar salas - Reservar salas para taller</h1>
+          <p class="page-subtitle">
+            Flujo basado en el diagrama de actividad: selección de horario, listado de salas disponibles,
+            validación de código de taller y asignación de sala.
+          </p>
+        </div>
+      </section>
+
+      <section class="cards-grid cards-grid-column">
+        <!-- Card: Selección de horario y listado de salas -->
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Reservar sala</div>
+              <div class="card-subtitle">
+                Seleccione un horario para ver las salas disponibles y asignarlas a un taller.
+              </div>
+            </div>
+          </div>
+
+          <!-- Seleccionar horario -->
+          <form id="formHorarioSala" class="inscripcion-form">
+            <div class="form-row">
+              <label class="form-label">
+                Día
+                <select id="diaSala" class="form-input">
+                  <option value="">Seleccione un día</option>
+                  <option value="Lunes">Lunes</option>
+                  <option value="Martes">Martes</option>
+                  <option value="Miércoles">Miércoles</option>
+                  <option value="Jueves">Jueves</option>
+                  <option value="Viernes">Viernes</option>
+                </select>
+              </label>
+              <label class="form-label">
+                Hora (HH:MM)
+                <input type="text" id="horaSala" class="form-input" placeholder="10:00" />
+              </label>
+            </div>
+
+            <button type="submit" class="btn-link">
+              Buscar salas disponibles
+            </button>
+            <p id="mensajeHorarioSala" class="muted" style="margin-top:8px;"></p>
+          </form>
+
+          <!-- Listado de salas disponibles -->
+          <p class="muted" id="textoSalasIntro" style="margin-top:8px;">
+            Seleccione un horario para obtener el listado de salas disponibles.
+          </p>
+          <ul class="list" id="listaSalasDisponibles"></ul>
+
+          <!-- Ingresar código de taller -->
+          <form id="formAsignarSala" class="inscripcion-form" style="margin-top:14px;">
+            <div class="form-row">
+              <label class="form-label">
+                Código de taller
+                <input type="number" id="codigoTallerSala" class="form-input"
+                      placeholder="Ej: 1" />
+              </label>
+            </div>
+            <p id="infoTallerSala" class="muted" style="margin-top:4px;"></p>
+            <button type="submit" class="btn-link">
+              Asignar sala al taller
+            </button>
+            <p id="mensajeAsignarSala" class="muted" style="margin-top:8px;"></p>
+          </form>
+        </article>
+      </section>
+    `,
+    init: function () {
+      const formHorario = document.getElementById("formHorarioSala");
+      const mensajeHorario = document.getElementById("mensajeHorarioSala");
+      const textoIntro = document.getElementById("textoSalasIntro");
+      const listaSalas = document.getElementById("listaSalasDisponibles");
+      const horaInput = document.getElementById("horaSala");
+
+      const formAsignarSala = document.getElementById("formAsignarSala");
+      const mensajeAsignar = document.getElementById("mensajeAsignarSala");
+      const codigoInput = document.getElementById("codigoTallerSala");
+      const infoTaller = document.getElementById("infoTallerSala");
+
+      if (!formHorario || !listaSalas || !formAsignarSala) return;
+
+      let horarioSeleccionado = null; // { dia, hora }
+      let salaSeleccionada = null;    // salaDummy seleccionada
+
+      // ===== Formateo visual de hora: 930 -> 09:30 =====
+      if (horaInput) {
+        horaInput.addEventListener("input", () => {
+          let val = horaInput.value.replace(/[^0-9]/g, "");
+
+          if (val.length <= 2) {
+            horaInput.value = val;
+            return;
+          }
+
+          const hh = val.slice(0, 2);
+          const mm = val.slice(2, 4);
+          if (mm.length > 0) {
+            horaInput.value = `${hh}:${mm}`;
+          } else {
+            horaInput.value = hh;
+          }
+        });
+      }
+
+      function obtenerSalasDisponibles(dia, hora) {
+        const ocupadasIds = new Set(
+          talleresData
+            .filter(
+              (t) =>
+                t.dia === dia &&
+                t.hora === hora &&
+                typeof t.salaId !== "undefined" &&
+                t.salaId !== null
+            )
+            .map((t) => t.salaId)
+        );
+
+        return salasDummy.filter((s) => !ocupadasIds.has(s.id));
+      }
+
+      function renderSalasDisponibles(salas) {
+        if (!salas.length) {
+          listaSalas.innerHTML = "";
+          return;
+        }
+
+        listaSalas.innerHTML = salas
+          .map(
+            (s) => `
+            <li class="list-item">
+              <span>${s.nombre}</span>
+              <span>
+                <button type="button"
+                        class="btn-sm btn-taller-select"
+                        data-sala-id="${s.id}">
+                  Seleccionar
+                </button>
+              </span>
+            </li>
+          `
+          )
+          .join("");
+      }
+
+      // ==== Seleccionar horario -> obtener salas ====
+      formHorario.addEventListener("submit", function (e) {
+        e.preventDefault();
+        mensajeHorario.textContent = "";
+        mensajeAsignar.textContent = "";
+        infoTaller.textContent = "";
+        salaSeleccionada = null;
+        codigoInput.value = "";
+
+        const dia = document.getElementById("diaSala").value;
+        const hora = document.getElementById("horaSala").value.trim();
+
+        const horaValida = /^\d{2}:\d{2}$/.test(hora);
+
+        if (!dia || !horaValida) {
+          mensajeHorario.textContent =
+            "Datos incompletos o con formato incorrecto.";
+          listaSalas.innerHTML = "";
+          textoIntro.textContent = "";
+          return;
+        }
+
+        horarioSeleccionado = { dia, hora };
+
+        const disponibles = obtenerSalasDisponibles(dia, hora);
+
+        if (!disponibles.length) {
+          mensajeHorario.textContent = "No hay salas disponibles en ese horario.";
+          listaSalas.innerHTML = "";
+          textoIntro.textContent = "";
+          return;
+        }
+
+        mensajeHorario.textContent = "";
+        textoIntro.textContent = "Seleccione una sala disponible de la lista.";
+        renderSalasDisponibles(disponibles);
+      });
+
+      // ==== Seleccionar una sala disponible (solo una vez) ====
+      listaSalas.addEventListener("click", function (e) {
+        const btn = e.target.closest("button[data-sala-id]");
+        if (!btn) return;
+
+        // si ya hay sala seleccionada, no permitir otra
+        if (salaSeleccionada) {
+          mensajeAsignar.textContent =
+            "Ya ha seleccionado una sala. Solo puede asignar una sala por vez.";
+          return;
+        }
+
+        if (!horarioSeleccionado) {
+          mensajeHorario.textContent = "Primero seleccione un horario.";
+          return;
+        }
+
+        const salaId = parseInt(btn.dataset.salaId, 10);
+        const sala = salasDummy.find((s) => s.id === salaId);
+        if (!sala) return;
+
+        salaSeleccionada = sala;
+        mensajeAsignar.textContent =
+          "Sala seleccionada: " +
+          sala.nombre +
+          ". Ingrese el código de taller y confirme.";
+
+        // Deshabilitar todas las salas para este horario
+        listaSalas
+          .querySelectorAll("button[data-sala-id]")
+          .forEach((b) => {
+            b.disabled = true;
+          });
+
+        btn.textContent = "Seleccionada";
+      });
+
+      // ===== Búsqueda previa del taller mientras escribe el código =====
+      codigoInput.addEventListener("input", () => {
+        mensajeAsignar.textContent = "";
+        const value = codigoInput.value.trim();
+
+        if (!value) {
+          infoTaller.textContent = "";
+          return;
+        }
+
+        const codigo = parseInt(value, 10);
+        if (!codigo) {
+          infoTaller.textContent = "Código de taller ingresado es incorrecto.";
+          return;
+        }
+
+        const taller = talleresData.find((t) => t.id === codigo);
+        if (!taller) {
+          infoTaller.textContent = "Código de taller ingresado es incorrecto.";
+          return;
+        }
+
+        const diaInfo = taller.dia ? taller.dia : "sin día asignado";
+        const horaInfo = taller.hora ? taller.hora : "";
+        infoTaller.textContent =
+          `Taller encontrado: [${taller.id}] ${taller.nombre}` +
+          ` (${diaInfo}${horaInfo ? " " + horaInfo : ""}).`;
+      });
+
+      // ==== Asignar sala al taller ====
+      formAsignarSala.addEventListener("submit", function (e) {
+        e.preventDefault();
+        mensajeAsignar.textContent = "";
+
+        if (!horarioSeleccionado) {
+          mensajeAsignar.textContent =
+            "Primero debe seleccionar un horario y una sala disponible.";
+          return;
+        }
+
+        if (!salaSeleccionada) {
+          mensajeAsignar.textContent =
+            "Primero debe seleccionar una sala disponible.";
+          return;
+        }
+
+        const codigoValor = codigoInput.value.trim();
+        const codigo = parseInt(codigoValor, 10);
+
+        if (!codigo) {
+          mensajeAsignar.textContent =
+            "Código de taller ingresado es incorrecto.";
+          return;
+        }
+
+        const taller = talleresData.find((t) => t.id === codigo);
+
+        // [¿Código existe?]
+        if (!taller) {
+          mensajeAsignar.textContent =
+            "Código de taller ingresado es incorrecto.";
+          infoTaller.textContent = "Código de taller ingresado es incorrecto.";
+          return;
+        }
+
+        // Asignar sala al taller + actualizar horario del taller según selección
+        taller.salaId = salaSeleccionada.id;
+        taller.dia = horarioSeleccionado.dia;
+        taller.hora = horarioSeleccionado.hora;
+
+        // Actualizar información del taller mostrado
+        const diaInfo = taller.dia ? taller.dia : "sin día asignado";
+        const horaInfo = taller.hora ? taller.hora : "";
+        infoTaller.textContent =
+          `Taller encontrado: [${taller.id}] ${taller.nombre}` +
+          ` (${diaInfo}${horaInfo ? " " + horaInfo : ""}).`;
+
+        // Limpiar listado de salas después de asignar
+        listaSalas.innerHTML = "";
+        textoIntro.textContent =
+          "Sala asignada. Si desea reservar otra sala, seleccione nuevamente un horario.";
+
+        // Mensaje final del diagrama
+        mensajeAsignar.textContent = "Sala asignada exitosamente.";
+
+        // Reset lógico para un nuevo proceso
+        horarioSeleccionado = null;
+        salaSeleccionada = null;
+        codigoInput.value = "";
+
+      });
+    },
+  },
+
   pagos: { title: "Pagos y bonos", subtitle: "...", render: () => `...` },
   reportes: { title: "Reportes", subtitle: "...", render: () => `...` },
   ayuda: { title: "Ayuda", subtitle: "...", render: () => `...` },
