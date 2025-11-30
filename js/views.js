@@ -1,9 +1,9 @@
-// Datos dummy de talleres para el CU-002
+// Datos dummy de talleres
 const talleresData = [
   {
     id: 1,
     nombre: "Gimnasia suave para adultos mayores",
-    cupos: 0, // para disparar el mensaje "Taller sin cupos"
+    cupos: 0,
   },
   {
     id: 2,
@@ -19,30 +19,30 @@ const talleresData = [
 
 const aspirantesData = [];
 
-// Instructores disponibles (pensado como futuro JSON/tabla Instructor)
+// Instructores disponibles dummy
 const instructoresDummy = [
   { id: 1, nombre: "María Pérez" },
   { id: 2, nombre: "Juan Soto" },
   { id: 3, nombre: "Ana González" },
 ];
 
-// Salas disponibles (pensado como futura tabla Sala)
+// Salas disponibles dummy
 const salasDummy = [
   { id: 1, nombre: "Sala 1" },
   { id: 2, nombre: "Sala 2" },
   { id: 3, nombre: "Sala 3" },
 ];
 
-// Evaluaciones registradas (mock)
+// Evaluaciones registradas
 window.evaluacionesData = window.evaluacionesData || [];
 
-// Relación RUT -> talleres inscritos (mock)
+// Inscritos en talleres dummy
 window.rutTalleresAsociados = window.rutTalleresAsociados || {
   "11.111.111-1": [1, 2],
   "22.222.222-2": [3]
 };
 
-// Operaciones de pagos / abonos registradas (mock)
+// Operaciones de pagos y abonos registradas
 const pagosData = [];
 
 // Vistas
@@ -50,7 +50,6 @@ const views = {
   inicio: { title: "Inicio", subtitle: "...", render: () => `...` },
   usuarios: { title: "Gestión de usuarios", subtitle: "...", render: () => `...` },
 
-  // 👉 CU-002 – Inscribir adulto mayor en taller
   talleres: {
     title: "Inscribir adulto mayor en taller",
     subtitle: "Caso de Uso CU-002",
@@ -138,10 +137,9 @@ const views = {
       if (!form) return;
 
       let datosValidados = false;
-      // Futuro AdultoMayor.talleres: lista de IDs de talleres inscritos
+
       let talleresInscritosIds = [];
 
-      // ==== Formateo visual del RUT: 111111111 -> 11.111.111-1 ====
       if (rutInput) {
         rutInput.addEventListener("input", () => {
           let value = rutInput.value.replace(/[^0-9kK]/g, "").toUpperCase();
@@ -167,7 +165,7 @@ const views = {
         });
       }
 
-      // ==== Envío del formulario ====
+      // Envío del formulario
       form.addEventListener("submit", function (e) {
         e.preventDefault();
         mensajeTaller.textContent = "";
@@ -177,10 +175,9 @@ const views = {
         const telefono = document.getElementById("telefono").value.trim();
         const direccion = document.getElementById("direccion").value.trim();
 
-        // Normalizamos RUT para la lógica
+        // Normalizamos RUT
         const rutNormalizado = rutVisual.replace(/[^0-9kK]/g, "").toUpperCase();
 
-        // [¿Está registrado en otro taller?] → dummy 111111111
         if (rutNormalizado === "111111111") {
           mensajeFormulario.textContent = "Usuario ya está registrado en un taller.";
           listaTalleres.innerHTML = "";
@@ -190,7 +187,7 @@ const views = {
           return;
         }
 
-        // Validación básica
+        // Validación
         if (!rutNormalizado || !nombre || !telefono || !direccion) {
           mensajeFormulario.textContent = "Datos ingresados no son correctos.";
           listaTalleres.innerHTML = "";
@@ -200,13 +197,11 @@ const views = {
           return;
         }
 
-        // Datos correctos -> mostramos talleres
         mensajeFormulario.textContent =
           "Datos validados correctamente. Seleccione un taller del listado.";
         datosValidados = true;
         textoIntro.textContent = "";
 
-        // Nuevo participante validado -> reiniciamos sus talleres inscritos
         talleresInscritosIds = [];
 
         listaTalleres.innerHTML = talleresData
@@ -243,7 +238,7 @@ const views = {
             .join("");
       });
 
-      // ==== Seleccionar taller de la lista ====
+      // Seleccionar taller de la lista
       listaTalleres.addEventListener("click", function (e) {
         const button = e.target.closest("button[data-taller-id]");
         if (!button) return;
@@ -258,24 +253,21 @@ const views = {
         const taller = talleresData.find((t) => t.id === id);
         if (!taller) return;
 
-        // ¿Ya está inscrito en este taller?
         if (talleresInscritosIds.includes(id)) {
             mensajeTaller.textContent =
             "El participante ya está inscrito en este taller.";
             return;
         }
 
-        // ¿Taller sin cupos?
         if (taller.cupos <= 0) {
             mensajeTaller.textContent = "Taller sin cupos.";
             return;
         }
 
-        // Registrar inscripción en este taller (AdultoMayor.talleres.push(id))
+        // Registrar inscripción en este taller
         taller.cupos -= 1;
         talleresInscritosIds.push(id);
 
-        // Actualizar chip y botón
         const chip = button.parentElement.querySelector(".chip");
         if (chip) {
             chip.textContent = `${taller.cupos} cupos`;
@@ -285,7 +277,6 @@ const views = {
         button.textContent = "Inscrito";
         button.classList.add("btn-taller-inscrito");
 
-        // Mensaje final del diagrama
         mensajeTaller.textContent = "Inscripción registrada exitosamente.";
         });
     },
@@ -456,7 +447,6 @@ const views = {
 
         const horaValida = /^\d{2}:\d{2}$/.test(hora);
 
-        // [¿Datos correctos?] -> validación
         if (
           !nombre ||
           !dia ||
@@ -472,7 +462,6 @@ const views = {
 
         const nombreKey = nombre.toLowerCase();
 
-        // [¿Existe un taller duplicado?]
         const duplicado = talleresData.some(
           (t) =>
             t.nombre.toLowerCase() === nombreKey &&
@@ -528,10 +517,8 @@ const views = {
         // Actualizar listado
         renderListadoTalleres();
 
-        // Mensaje final del diagrama
         mensaje.textContent = "Taller registrado correctamente.";
 
-        // Limpiar formulario
         form.reset();
       });
     },
@@ -609,7 +596,6 @@ const views = {
 
         if (!form) return;
 
-        // Formato visual de RUT (igual que en CU-002)
         if (rutInput) {
         rutInput.addEventListener("input", () => {
             let value = rutInput.value.replace(/[^0-9kK]/g, "").toUpperCase();
@@ -644,10 +630,10 @@ const views = {
         const telefono = document.getElementById("postTelefono").value.trim();
         const experiencia = document.getElementById("postExperiencia").value.trim();
 
-        // Normalizamos RUT solo para futura lógica
+        // Normalizamos RUT
         const rutNormalizado = rutVisual.replace(/[^0-9kK]/g, "").toUpperCase();
 
-        // Validación básica (equivale a "¿Datos ingresados correctamente?")
+        // Validación email
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (
@@ -662,7 +648,7 @@ const views = {
             return;
         }
 
-        // Registrar datos del aspirante en el "sistema" (dummy)
+        // Registrar datos del aspirante en el "sistema"
         const entrevistaDate = new Date();
         entrevistaDate.setDate(entrevistaDate.getDate() + 3);
         entrevistaDate.setHours(10, 0, 0, 0);
@@ -682,13 +668,11 @@ const views = {
             fechaEntrevista,
         });
 
-        // Mensaje final del diagrama:
         mensajePostulacion.textContent =
             "Postulación registrada correctamente, su entrevista queda agendada para " +
             fechaEntrevista +
             " Hrs.";
 
-        // Opcional: limpiar el formulario después de registrar
         form.reset();
         });
     },
@@ -784,10 +768,9 @@ const views = {
 
       if (!formHorario || !listaSalas || !formAsignarSala) return;
 
-      let horarioSeleccionado = null; // { dia, hora }
-      let salaSeleccionada = null;    // salaDummy seleccionada
+      let horarioSeleccionado = null;
+      let salaSeleccionada = null;
 
-      // ===== Formateo visual de hora: 930 -> 09:30 =====
       if (horaInput) {
         horaInput.addEventListener("input", () => {
           let val = horaInput.value.replace(/[^0-9]/g, "");
@@ -847,7 +830,6 @@ const views = {
           .join("");
       }
 
-      // ==== Seleccionar horario -> obtener salas ====
       formHorario.addEventListener("submit", function (e) {
         e.preventDefault();
         mensajeHorario.textContent = "";
@@ -885,7 +867,6 @@ const views = {
         renderSalasDisponibles(disponibles);
       });
 
-      // ==== Seleccionar una sala disponible (solo una vez) ====
       listaSalas.addEventListener("click", function (e) {
         const btn = e.target.closest("button[data-sala-id]");
         if (!btn) return;
@@ -922,7 +903,6 @@ const views = {
         btn.textContent = "Seleccionada";
       });
 
-      // ===== Búsqueda previa del taller mientras escribe el código =====
       codigoInput.addEventListener("input", () => {
         mensajeAsignar.textContent = "";
         const value = codigoInput.value.trim();
@@ -951,7 +931,7 @@ const views = {
           ` (${diaInfo}${horaInfo ? " " + horaInfo : ""}).`;
       });
 
-      // ==== Asignar sala al taller ====
+      // Asignar sala al taller
       formAsignarSala.addEventListener("submit", function (e) {
         e.preventDefault();
         mensajeAsignar.textContent = "";
@@ -979,7 +959,6 @@ const views = {
 
         const taller = talleresData.find((t) => t.id === codigo);
 
-        // [¿Código existe?]
         if (!taller) {
           mensajeAsignar.textContent =
             "Código de taller ingresado es incorrecto.";
@@ -987,7 +966,7 @@ const views = {
           return;
         }
 
-        // Asignar sala al taller + actualizar horario del taller según selección
+        // Asignar sala al taller
         taller.salaId = salaSeleccionada.id;
         taller.dia = horarioSeleccionado.dia;
         taller.hora = horarioSeleccionado.hora;
@@ -1004,10 +983,8 @@ const views = {
         textoIntro.textContent =
           "Sala asignada. Si desea reservar otra sala, seleccione nuevamente un horario.";
 
-        // Mensaje final del diagrama
         mensajeAsignar.textContent = "Sala asignada exitosamente.";
 
-        // Reset lógico para un nuevo proceso
         horarioSeleccionado = null;
         salaSeleccionada = null;
         codigoInput.value = "";
@@ -1122,7 +1099,6 @@ const views = {
 
       let tallerSeleccionado = null;
 
-      // ====== formateo de RUT visual ======
       rutInput.addEventListener("input", () => {
         let val = rutInput.value.replace(/[^0-9kK]/g, "");
         if (val.length <= 1) {
@@ -1135,7 +1111,6 @@ const views = {
         rutInput.value = `${cuerpo}-${dv}`;
       });
 
-      // ====== Buscar talleres asociados ======
       formRut.addEventListener("submit", function (e) {
         e.preventDefault();
         mensajeRut.textContent = "";
@@ -1170,7 +1145,6 @@ const views = {
           .join("");
       });
 
-      // ====== Seleccionar taller ======
       listadoTalleresEval.addEventListener("click", (e) => {
         const btn = e.target.closest("button[data-id]");
         if (!btn) return;
@@ -1186,7 +1160,7 @@ const views = {
         comentarioInput.value = "";
       });
 
-      // ====== Enviar evaluación ======
+      // Enviar evaluacion
       formEval.addEventListener("submit", function (e) {
         e.preventDefault();
         mensajeEval.textContent = "";
@@ -1315,7 +1289,6 @@ const views = {
 
       if (!form) return;
 
-      // ===== Formateo visual de RUT (igual que en otros casos) =====
       rutInput.addEventListener("input", () => {
         let value = rutInput.value.replace(/[^0-9kK]/g, "").toUpperCase();
 
@@ -1367,7 +1340,7 @@ const views = {
           .join("");
       }
 
-      // ===== Enviar formulario (validar y registrar operación) =====
+      // Enviar formulario
       form.addEventListener("submit", function (e) {
         e.preventDefault();
         mensajePago.textContent = "";
@@ -1398,7 +1371,6 @@ const views = {
           return;
         }
 
-        // Etiqueta legible para el tipo
         let tipoLabel = "";
         switch (tipo) {
           case "pago":
@@ -1414,7 +1386,6 @@ const views = {
             tipoLabel = "Operación";
         }
 
-        // "Enviar pago o bono" + "Enviar comprobante por email" (mock)
         pagosData.push({
           tipo,
           tipoLabel,
@@ -1437,7 +1408,7 @@ const views = {
         renderOperaciones();
       });
 
-      // Render inicial (por si había datos previos)
+      // Render inicial
       renderOperaciones();
     },
   },
@@ -1565,7 +1536,6 @@ const views = {
           return;
         }
 
-        // "Obtener datos" y "Generar informe según template" (mock)
         let titulo = "";
         let filas = [];
 
@@ -1592,11 +1562,9 @@ const views = {
           ];
         }
 
-        // Resumen textual
         reporteResumen.textContent =
           `${titulo} para el período ${desde} a ${hasta}. (Datos simulados para prototipo.)`;
 
-        // Contenido según tipo (tabla muy simple)
         if (tipo === "asistencia") {
           reporteContenido.innerHTML = `
             <table class="table-report">
@@ -1665,10 +1633,8 @@ const views = {
           `;
         }
 
-        // Mostrar card de resultado
         cardResultado.style.display = "block";
 
-        // Guardar datos del último reporte para la descarga
         ultimoReporte = {
           desde,
           hasta,
@@ -1678,7 +1644,6 @@ const views = {
         };
       });
 
-          // Helpers para generar un PDF muy simple (texto en varias líneas)
       function escapePdfText(text) {
         return text
           .replace(/\\/g, "\\\\")
@@ -1699,15 +1664,13 @@ const views = {
           currentOffset += obj.length;
         }
 
-        // Contenido de texto del reporte
-        // Partimos en (72, 800) y luego bajamos 14 puntos por línea
         let contentStream = "BT\n/F1 10 Tf\n72 800 Td\n";
         lines.forEach((line) => {
           contentStream += `(${escapePdfText(line)}) Tj\n0 -14 Td\n`;
         });
         contentStream += "ET\n";
 
-        // Objetos PDF básicos
+        // PDF básicos
         addObject(1, "<< /Type /Catalog /Pages 2 0 R >>");
         addObject(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
         addObject(
@@ -1735,7 +1698,7 @@ const views = {
         return header + body + xref + trailer;
       }
 
-      // ===== Descargar informe en PDF (prototipo sencillo) =====
+      // Descargar informe en PDF
       btnDescargar.addEventListener("click", function () {
         mensajeDescarga.textContent = "";
 
@@ -1745,7 +1708,6 @@ const views = {
           return;
         }
 
-        // Construimos líneas de texto basadas en la tabla mostrada
         const lines = [];
         lines.push(ultimoReporte.titulo);
         lines.push("");

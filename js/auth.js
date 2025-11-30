@@ -1,147 +1,259 @@
-const loginContainer = document.getElementById("loginContainer");
-const appContainer = document.getElementById("appContainer");
-
+// Usuario demo
 const DUMMY_USER = {
   email: "user1@email.com",
   password: "12345",
-  role: "administrador",
+  nombre: "Usuario demo",
 };
 
-const MAX_ATTEMPTS = 3;
-const BLOCK_TIME = 48 * 60 * 60 * 1000; // 48 horas
+// Configuración de bloqueo
+const LOGIN_MAX_ATTEMPTS = 3;
+const LOGIN_BLOCK_HOURS = 48;
 
+// Claves en localStorage
+const SESSION_KEY = "session";
+const ATTEMPTS_KEY = "loginFailedAttempts";
+const BLOCKED_KEY = "loginBlockedUntil";
+
+// Utilidades de estado de login
+function getLoginState() {
+  const attempts = parseInt(localStorage.getItem(ATTEMPTS_KEY) || "0", 10);
+  const blockedUntilRaw = localStorage.getItem(BLOCKED_KEY);
+  const now = Date.now();
+
+  let blockedUntil = null;
+  let isBlocked = false;
+
+  if (blockedUntilRaw) {
+    blockedUntil = parseInt(blockedUntilRaw, 10);
+    if (!Number.isNaN(blockedUntil) && blockedUntil > now) {
+      isBlocked = true;
+    } else {
+      // ya expiró el bloqueo
+      localStorage.removeItem(BLOCKED_KEY);
+    }
+  }
+
+  return { attempts, blockedUntil, isBlocked };
+}
+
+function setLoginFailed() {
+  const state = getLoginState();
+  const newAttempts = state.attempts + 1;
+  localStorage.setItem(ATTEMPTS_KEY, String(newAttempts));
+
+  if (newAttempts >= LOGIN_MAX_ATTEMPTS && !state.isBlocked) {
+    const blockedUntil = Date.now() + LOGIN_BLOCK_HOURS * 60 * 60 * 1000;
+    localStorage.setItem(BLOCKED_KEY, String(blockedUntil));
+  }
+}
+
+function resetLoginState() {
+  localStorage.removeItem(ATTEMPTS_KEY);
+  localStorage.removeItem(BLOCKED_KEY);
+}
+
+// Notificar al resto de la app
+function notifyAuthChanged(user) {
+  window.dispatchEvent(
+    new CustomEvent("auth:changed", { detail: user || null })
+  );
+}
+
+// Helpers DOM
+function getContainers() {
+  return {
+    loginContainer: document.getElementById("loginContainer"),
+    appContainer: document.getElementById("appContainer"),
+  };
+}
+
+// Render del formulario de login
 function renderLogin() {
+  const { loginContainer } = getContainers();
+  if (!loginContainer) return;
+  
   loginContainer.innerHTML = `
     <div class="login-box">
       <div class="login-header">
           <h1 class="login-title">Talleres Adulto Mayor</h1>
       </div>
-      <div class="login-form">
+
+      <form id="loginForm" class="login-form">
+
+        <!-- SELECT DE PERFIL -->
+        <label class="login-label">
+          Perfil
+          <select id="loginProfile" class="login-input login-select">
+            <option value="">Seleccione un perfil</option>
+            <option value="administrador">Administrador</option>
+            <option value="funcionario">Funcionario municipal</option>
+            <option value="adultoMayor">Adulto mayor</option>
+            <option value="aspirante">Aspirante a instructor</option>
+            <option value="instructor">Instructor</option>
+          </select>
+        </label>
+
         <label class="login-label">
           Correo electrónico
-          <input type="email" id="email" class="login-input" placeholder="usuario@correo.cl" />
+          <input type="email" id="loginEmail" class="login-input" placeholder="usuario@correo.cl" />
         </label>
+
         <label class="login-label">
           Contraseña
-          <input type="password" id="password" class="login-input" placeholder="********" />
+          <input type="password" id="loginPassword" class="login-input" placeholder="********" />
         </label>
-        <button id="btnLogin" class="login-button">Ingresar</button>
-        <p id="loginMessage" class="login-message"></p>
+
+        <button id="btnLogin" type="submit" class="login-button">Ingresar</button>
+
+        <p id="loginError" class="login-message"></p>
+
         <p class="login-hint muted">
-          Usuario demo: <strong>user1@email.com</strong> · Contraseña: <strong>12345</strong>
+          Usuario demo: <strong>user1@email.com</strong>
+          · Pass demo: <strong>12345</strong>
         </p>
-      </div>
+      </form>
     </div>
   `;
 
-  document.getElementById("btnLogin").onclick = handleLogin;
-}
-
-function checkBlocked() {
-  const blockDataRaw = localStorage.getItem("blockData");
-  if (!blockDataRaw) return false;
-
-  try {
-    const blockData = JSON.parse(blockDataRaw);
-    const now = Date.now();
-    if (now < blockData.expires) {
-      return true;
-    }
-  } catch (e) {
-    // Si algo falló, limpiamos bloqueo corrupto
-    localStorage.removeItem("blockData");
+  const loginForm = document.getElementById("loginForm");
+  if (loginForm) {
+    loginForm.addEventListener("submit", handleLogin);
   }
 
-  localStorage.removeItem("blockData");
-  localStorage.removeItem("loginAttempts");
-  return false;
+  // Si está bloqueado, deshabilitar inputs y mostrar mensaje
+  const state = getLoginState();
+  if (state.isBlocked && loginForm) {
+    const errorEl = document.getElementById("loginError");
+    if (errorEl) {
+      errorEl.textContent =
+        "Cuenta bloqueada por intentos fallidos. Intente nuevamente más tarde.";
+    }
+    Array.from(loginForm.elements).forEach((el) => (el.disabled = true));
+  }
 }
 
-function handleLogin() {
-  const messageEl = document.getElementById("loginMessage");
+// Manejar submit del login
+function handleLogin(event) {
+  event.preventDefault();
 
-  if (checkBlocked()) {
-    messageEl.innerHTML =
-      "Cuenta bloqueada por 48 horas.<br/><strong>Contactar admin</strong>";
+  const { loginContainer, appContainer } = getContainers();
+  const emailInput = document.getElementById("loginEmail");
+  const passwordInput = document.getElementById("loginPassword");
+  const profileSelect = document.getElementById("loginProfile");
+  const errorEl = document.getElementById("loginError");
+
+  if (!emailInput || !passwordInput || !profileSelect) return;
+
+  const state = getLoginState();
+  if (state.isBlocked) {
+    if (errorEl) {
+      errorEl.textContent =
+        "Cuenta bloqueada por intentos fallidos. Intente nuevamente más tarde.";
+    }
     return;
   }
-
-  const emailInput = document.getElementById("email");
-  const passwordInput = document.getElementById("password");
 
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
+  const perfil = profileSelect.value;
 
-  if (!email || !password) {
-    messageEl.textContent = "Ingrese correo y contraseña.";
-    return;
-  }
-
-  if (email === DUMMY_USER.email && password === DUMMY_USER.password) {
-    localStorage.setItem("session", JSON.stringify(DUMMY_USER));
-    loginContainer.style.display = "none";
-    appContainer.style.display = "flex"; // ocupa toda la pantalla
-    messageEl.textContent = "";
-
-    // Volver al inicio y limpiar contenido viejo
-    if (typeof renderView === "function") {
-        renderView("inicio");
+  if (!perfil) {
+    if (errorEl) {
+      errorEl.textContent = "Seleccione un perfil para continuar.";
     }
+    return;
+  }
 
-    // Resetear opción activa del sidebar
-    const links = document.querySelectorAll(".sidebar-link");
-    links.forEach((l) => l.classList.remove("active"));
-    const linkInicio = document.querySelector('.sidebar-link[data-view="inicio"]');
-    if (linkInicio) {
-        linkInicio.classList.add("active");
+  if (email !== DUMMY_USER.email || password !== DUMMY_USER.password) {
+    setLoginFailed();
+    if (errorEl) {
+      const { attempts, isBlocked } = getLoginState();
+      if (isBlocked) {
+        errorEl.textContent =
+          "Cuenta bloqueada por intentos fallidos. Intente nuevamente más tarde.";
+      } else {
+        const restantes = Math.max(
+          LOGIN_MAX_ATTEMPTS - attempts,
+          0
+        );
+        errorEl.textContent =
+          "Credenciales incorrectas. Intentos restantes: " + restantes + ".";
+      }
     }
-
-    return;
-  }
-  
-  let attempts = Number(localStorage.getItem("loginAttempts") || 0);
-  attempts++;
-  localStorage.setItem("loginAttempts", attempts);
-
-  if (attempts >= MAX_ATTEMPTS) {
-    const expires = Date.now() + BLOCK_TIME;
-    localStorage.setItem("blockData", JSON.stringify({ expires }));
-    messageEl.innerHTML =
-      "❌ Cuenta bloqueada por intentos fallidos.<br/>Bloqueo: 48 horas.<br/><strong>Contactar admin</strong>";
     return;
   }
 
-  const remaining = MAX_ATTEMPTS - attempts;
-  messageEl.textContent =
-    "Credenciales no válidas. Intentos restantes: " + remaining + ".";
+  // Login correcto
+  resetLoginState();
+  if (errorEl) errorEl.textContent = "";
+
+  const sessionUser = {
+    email: DUMMY_USER.email,
+    nombre: DUMMY_USER.nombre,
+    rol: perfil,
+  };
+
+  localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
+
+  if (loginContainer) loginContainer.style.display = "none";
+  if (appContainer) appContainer.style.display = "flex";
+
+  // Notificar al resto de la app
+  notifyAuthChanged(sessionUser);
 }
 
+// Inicializar autenticación al cargar la página
 function initAuth() {
-  const session = localStorage.getItem("session");
+  const { loginContainer, appContainer } = getContainers();
+  if (!loginContainer || !appContainer) return;
 
-  if (session && !checkBlocked()) {
+  const state = getLoginState();
+  const sessionRaw = localStorage.getItem(SESSION_KEY);
+  let user = null;
+
+  if (sessionRaw && !state.isBlocked) {
+    try {
+      user = JSON.parse(sessionRaw);
+    } catch {
+      user = null;
+    }
+  }
+
+  if (user) {
     loginContainer.style.display = "none";
     appContainer.style.display = "flex";
+    notifyAuthChanged(user);
   } else {
     appContainer.style.display = "none";
     loginContainer.style.display = "flex";
     renderLogin();
+    notifyAuthChanged(null);
   }
 }
 
+// Cerrar sesión
 function logout() {
-  localStorage.removeItem("session");
-  loginContainer.style.display = "flex";
-  appContainer.style.display = "none";
+  const { loginContainer, appContainer } = getContainers();
+
+  localStorage.removeItem(SESSION_KEY);
+  resetLoginState();
+
+  if (appContainer) appContainer.style.display = "none";
+  if (loginContainer) loginContainer.style.display = "flex";
+
   renderLogin();
+  notifyAuthChanged(null);
 }
 
-// Botón "Cerrar sesión" del topbar (tiene clase .btn-primary)
-document.addEventListener("click", (e) => {
-  const logoutButton = e.target.closest("#btnLogout");
-  if (logoutButton && appContainer.style.display !== "none") {
-    logout();
+window.initAuth = initAuth;
+window.logout = logout;
+window.getCurrentUserRole = function () {
+  const sessionRaw = localStorage.getItem(SESSION_KEY);
+  if (!sessionRaw) return null;
+  try {
+    const user = JSON.parse(sessionRaw);
+    return user.rol || null;
+  } catch {
+    return null;
   }
-});
-
-initAuth();
+};
