@@ -72,6 +72,7 @@ function renderLogin() {
   const { loginContainer } = getContainers();
   if (!loginContainer) return;
   
+  // Template HTML Login UI
   loginContainer.innerHTML = `
     <div class="login-box">
       <div class="login-header">
@@ -108,8 +109,7 @@ function renderLogin() {
         <p id="loginError" class="login-message"></p>
 
         <p class="login-hint muted">
-          Usuario demo: <strong>user1@email.com</strong>
-          · Pass demo: <strong>12345</strong>
+          Para más información ver archivo: <strong>Avance Prototipo Entrega 3.xlsx</strong>
         </p>
       </form>
     </div>
@@ -207,28 +207,14 @@ function initAuth() {
   const { loginContainer, appContainer } = getContainers();
   if (!loginContainer || !appContainer) return;
 
-  const state = getLoginState();
-  const sessionRaw = localStorage.getItem(SESSION_KEY);
-  let user = null;
+  // Al refrescar la página siempre volvemos al login
+  localStorage.removeItem(SESSION_KEY);
 
-  if (sessionRaw && !state.isBlocked) {
-    try {
-      user = JSON.parse(sessionRaw);
-    } catch {
-      user = null;
-    }
-  }
+  appContainer.style.display = "none";
+  loginContainer.style.display = "flex";
 
-  if (user) {
-    loginContainer.style.display = "none";
-    appContainer.style.display = "flex";
-    notifyAuthChanged(user);
-  } else {
-    appContainer.style.display = "none";
-    loginContainer.style.display = "flex";
-    renderLogin();
-    notifyAuthChanged(null);
-  }
+  renderLogin();
+  notifyAuthChanged(null);
 }
 
 // Cerrar sesión

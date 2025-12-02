@@ -1233,7 +1233,7 @@ const views = {
               </label>
 
               <label class="form-label">
-                Autorización (PDF)
+                Autorización
                 <input type="file" id="archivoAutorizacion" class="form-input" accept="application/pdf" />
               </label>
             </div>
