@@ -1,7 +1,7 @@
 // Usuario demo
 const DUMMY_USER = {
-  email: "user1@email.com",
-  password: "12345",
+  email: "demo@email.com",
+  password: "arquitectura",
   nombre: "Usuario demo",
 };
 
@@ -101,7 +101,22 @@ function renderLogin() {
 
         <label class="login-label">
           Contraseña
-          <input type="password" id="loginPassword" class="login-input" placeholder="********" />
+          <div class="login-password-wrapper">
+            <input
+              type="password"
+              id="loginPassword"
+              class="login-input"
+              placeholder="********"
+            />
+            <button
+              type="button"
+              id="togglePassword"
+              class="login-password-toggle"
+              aria-label="Mostrar u ocultar contraseña"
+            >
+              👁
+            </button>
+          </div>
         </label>
 
         <button id="btnLogin" type="submit" class="login-button">Ingresar</button>
@@ -118,6 +133,19 @@ function renderLogin() {
   const loginForm = document.getElementById("loginForm");
   if (loginForm) {
     loginForm.addEventListener("submit", handleLogin);
+  }
+
+  // Ojo para mostrar/ocultar contraseña
+  const passwordInput = document.getElementById("loginPassword");
+  const togglePassword = document.getElementById("togglePassword");
+
+  if (passwordInput && togglePassword) {
+    togglePassword.addEventListener("click", () => {
+      const isHidden = passwordInput.type === "password";
+      passwordInput.type = isHidden ? "text" : "password";
+      // Cambiamos el ícono para que se note el estado
+      togglePassword.textContent = isHidden ? "🙈" : "👁";
+    });
   }
 
   // Si está bloqueado, deshabilitar inputs y mostrar mensaje
